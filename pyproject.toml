@@ -1,0 +1,81 @@
+[project]
+name = "vsu"
+version = "0.1.0"
+description = "VLM scene understanding for the Morpheus Sim benchmark: material recognition, physical property inference, comparative physics and simulator initialization from first frames."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [
+  { name = "Ippokratis Pantelidis" },
+  { name = "Thijmen" },
+]
+dependencies = [
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "pyyaml>=6.0",
+  "jinja2>=3.1",
+  "numpy>=1.26",
+  "scipy>=1.11",
+  "pandas>=2.1",
+  "pillow>=10.0",
+  "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# Open models through Hugging Face transformers (Qwen3-VL, InternVL). GPU only.
+hf = [
+  "torch>=2.5",
+  "torchvision>=0.20",
+  "transformers>=4.57",
+  "accelerate>=1.0",
+  "qwen-vl-utils>=0.0.14",
+  "huggingface_hub>=0.34",
+]
+# Closed models through APIs.
+api = [
+  "openai>=1.50",
+  "google-genai>=1.0",
+]
+# Optional high throughput serving of open models inside a SLURM job.
+vllm = [
+  "vllm>=0.10",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "ruff>=0.6",
+  "pre-commit>=3.7",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vsu"]
+
+[tool.uv]
+# Keep the base install light; `uv sync --all-extras` on Snellius pulls torch etc.
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+extend-exclude = ["results", "data", ".cache"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "W"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["vsu"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = ["error::DeprecationWarning:vsu.*"]

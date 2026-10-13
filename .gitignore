@@ -1,0 +1,40 @@
+# Data: only the small versioned subsets live in git (PLAN.md Section 2.2 and 6).
+data/*
+!data/README.md
+!data/smoke/
+!data/materials/
+!data/annotations/
+
+# Run outputs are large and live in VSU_RESULTS_ROOT; only aggregated tables are committed.
+results/*
+!results/tables/
+
+# Model response cache.
+.cache/
+
+# Secrets.
+.env
+*.secrets.env
+
+# Python.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Editors and OS.
+.vscode/
+.idea/
+.DS_Store
+
+# Notebooks are not the source of truth; keep outputs out of git.
+*.ipynb_checkpoints
+
+# Internal planning documents, kept out of the repo for now.
+PLAN.md
+CHANGELOG.md
