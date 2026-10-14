@@ -94,8 +94,11 @@ based work. `discover_scenes(only_passing=True)` excludes it; pass `only_passing
 
 ## Smoke set
 
-Under 20 photos or renders of objects of known material in `smoke/`, with `labels.csv`
-(`file,material,object,notes`). Used by tests and by Experiment 1 smoke runs. Not yet collected.
+Eighteen photos from Wikimedia Commons in `smoke/`, two per material for metal, ping pong
+plastic, wood, foam, ceramic, cardboard, book and glass, one each for rubber and plastic. Resized to
+at most 800 px. `labels.csv` has `file,material,object,notes` plus `source_url,author,license`;
+`ATTRIBUTION.md` lists the credits (all CC0, public domain, CC BY or CC BY-SA). Loader:
+`vsu.data.smoke.load_smoke_set`. Used by tests and by Experiment 1 smoke runs.
 
 ## Physion++
 
