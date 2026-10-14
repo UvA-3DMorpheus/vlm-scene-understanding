@@ -220,6 +220,29 @@ class Scene:
         image = self.frame(camera, index)
         return image.crop(expand_bbox(box, image.size, margin=margin, min_size=min_size))
 
+    def crop_path(
+        self,
+        camera: str = "front",
+        index: int = 0,
+        object_id: str | None = None,
+        *,
+        margin: float = 0.2,
+        min_size: int = 32,
+    ) -> Path:
+        """The object crop written once as a PNG next to the decoded frames, and its path.
+
+        Experiments pass image paths around, so a crop needs a file. The name carries the
+        frame index, object id and margin, so different crops never collide.
+        """
+        obj = self.gt.obj if object_id is None else self._object(object_id)
+        path = self.frames_cache / camera / f"crop_{index:06d}_{obj.id}_m{margin:.2f}.png"
+        if not path.is_file():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".png.tmp")
+            self.crop(camera, index, object_id, margin=margin, min_size=min_size).save(tmp, "PNG")
+            tmp.replace(path)
+        return path
+
     def _object(self, object_id: str) -> SceneObject:
         for o in self.gt.objects:
             if o.id == object_id:

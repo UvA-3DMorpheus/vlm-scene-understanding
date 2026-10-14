@@ -1,0 +1,21 @@
+# Experiment 1: material recognition from a single image.
+# Questions: every smoke set photo, and every simulated scene whose object has a material class,
+# from each listed camera, in each input condition (whole first frame, or the object crop cut
+# from the segmentation mask). Three prompt variants: closed set, open set, closed set with reasoning.
+variants: [v1, v2, v3]
+models: [dummy]
+seed: 0
+options:
+  # Roles: the primary dataset is what we report; sanity datasets only show the pipeline works
+  # on real images and are reported separately, never mixed into the headline numbers.
+  primary_dataset: sim
+  sanity_datasets: [smoke]
+  datasets: [smoke, sim]
+  sim_cameras: [front]
+  sim_conditions: [frame, crop]
+  frame_index: 0
+  crop_margin: 0.2
+  only_passing_scenes: false
+notes: >
+  The closed set listed in the prompt is the label set of the dataset: the material table keys
+  for the smoke photos, the five materials.json classes for simulated scenes.
