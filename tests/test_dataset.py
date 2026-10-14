@@ -385,3 +385,18 @@ def test_interrupted_extraction_is_not_reused(tmp_path: Path, scene: Scene) -> N
     frames = extract_frames(scene.video("front"), out)
     assert len(frames) == F and not partial.exists()
     assert frames[0].stat().st_size > 100
+
+
+def test_outline_paints_the_mask_boundary_inside_the_object(scene: Scene) -> None:
+    image = np.asarray(scene.outline("front", 0, thickness=2))
+    mask = scene.mask("front", 0)
+    red = (image[..., 0] == 255) & (image[..., 1] == 0) & (image[..., 2] == 0)
+    assert red.any() and not (red & ~mask).any()  # only inside the object
+    assert red.sum() < mask.sum()  # a band, not the whole object
+    inner = mask.copy()
+    inner[:, :] = False
+    inner[10:18, 14:24] = True  # well inside the 12x16 box at (10, 8)
+    assert not (red & inner).any()
+    path = scene.outline_path("front", 0, thickness=2)
+    assert path.name == "outline_000000_object_t2.png" and path.is_file()
+    assert scene.outline_path("front", 0, thickness=2) == path

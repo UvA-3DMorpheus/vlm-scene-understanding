@@ -13,7 +13,11 @@ options:
   datasets: [smoke, sim]
   # front is the Morpheus style level view; the other four see motion toward or away from the camera.
   sim_cameras: [front, left, right, high, low]
-  sim_conditions: [frame, crop]
+  # frame: whole first frame; crop: object cut along its mask; outline: whole frame with the
+  # object's mask boundary drawn in red (visual prompt without losing context).
+  sim_conditions: [frame, crop, outline]
+  # One extra question per scene with the first frame of every camera in one prompt.
+  sim_multiview: true
   frame_index: 0
   crop_margin: 0.2
   only_passing_scenes: false

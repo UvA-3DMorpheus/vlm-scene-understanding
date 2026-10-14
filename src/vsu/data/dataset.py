@@ -243,6 +243,49 @@ class Scene:
             tmp.replace(path)
         return path
 
+    def outline(
+        self,
+        camera: str = "front",
+        index: int = 0,
+        object_id: str | None = None,
+        *,
+        color: tuple[int, int, int] = (255, 0, 0),
+        thickness: int = 3,
+    ) -> Image.Image:
+        """The whole frame with the object's mask boundary painted in ``color``.
+
+        A visual prompt that tells the model which object the question is about without
+        cutting away the context the crop loses. The boundary is the mask minus its
+        erosion by ``thickness`` pixels, so the painted band lies inside the object.
+        """
+        from scipy.ndimage import binary_erosion
+
+        mask = self.mask(camera, index, object_id)
+        if not mask.any():
+            raise ValueError(f"{self.scene_id}: object not visible in {camera} frame {index}")
+        band = mask & ~binary_erosion(mask, iterations=thickness, border_value=0)
+        image = np.array(self.frame(camera, index))
+        image[band] = color
+        return Image.fromarray(image)
+
+    def outline_path(
+        self,
+        camera: str = "front",
+        index: int = 0,
+        object_id: str | None = None,
+        *,
+        thickness: int = 3,
+    ) -> Path:
+        """The outlined frame written once as a PNG next to the decoded frames, and its path."""
+        obj = self.gt.obj if object_id is None else self._object(object_id)
+        path = self.frames_cache / camera / f"outline_{index:06d}_{obj.id}_t{thickness}.png"
+        if not path.is_file():
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".png.tmp")
+            self.outline(camera, index, object_id, thickness=thickness).save(tmp, "PNG")
+            tmp.replace(path)
+        return path
+
     def _object(self, object_id: str) -> SceneObject:
         for o in self.gt.objects:
             if o.id == object_id:

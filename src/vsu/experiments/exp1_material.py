@@ -3,8 +3,11 @@
 Questions come from the smoke photos and from simulated scenes whose object carries a
 material class. Each simulated scene yields one question per camera and input condition:
 ``frame`` shows the whole first frame, ``crop`` shows the object cut out along its
-segmentation mask. The label set offered in closed set prompts is the dataset's own: the
-material table keys for photos, the five materials.json classes for simulated scenes.
+segmentation mask, ``outline`` shows the whole frame with the object's mask boundary
+drawn in red. With ``sim_multiview`` on, one more question per scene shows the first
+frame of every camera at once (condition ``multiview``, camera ``all``). The label set
+offered in closed set prompts is the dataset's own: the material table keys for photos,
+the five materials.json classes for simulated scenes.
 
 Variants (templates ``exp1_<variant>.jinja``): ``v1`` closed set, one label; ``v2`` open
 set free text, mapped onto the label set through the material table aliases; ``v3``
@@ -32,7 +35,13 @@ FOCUS = {
     "photo": "the main object in this photo",
     "frame": "the main movable object in this image (not the surface it rests on)",
     "crop": "the object shown in this close crop",
+    "outline": "the object outlined in red in this image",
+    "multiview": (
+        "the main movable object (not the surface it rests on), shown from five different "
+        "cameras in these images"
+    ),
 }
+MULTIVIEW_CAMERA = "all"
 
 
 class MaterialExperiment(Experiment):
@@ -104,10 +113,24 @@ class MaterialExperiment(Experiment):
         scenes = discover_scenes(
             only_passing=bool(opts.get("only_passing_scenes", False)), settings=self.settings
         )
+        multiview = bool(opts.get("sim_multiview", False))
         for scene in scenes:
             material = scene.gt.obj.material_class
             if material is None:
                 continue
+            if multiview:
+                present = [c for c in cameras if c in scene.cameras]
+                if len(present) >= 2:
+                    out.append(
+                        self._sim_question(
+                            scene,
+                            MULTIVIEW_CAMERA,
+                            "multiview",
+                            [str(scene.frame_path(c, index)) for c in present],
+                            labels,
+                            material,
+                        )
+                    )
             for camera in cameras:
                 if camera not in scene.cameras:
                     log.warning("%s has no camera %s", scene.scene_id, camera)
@@ -115,28 +138,38 @@ class MaterialExperiment(Experiment):
                 for condition in conditions:
                     image = self._sim_image(scene, camera, index, condition, margin)
                     out.append(
-                        Question(
-                            id=f"sim/{scene.scene_id}/{camera}/{condition}",
-                            dataset="sim",
-                            item_id=scene.scene_id,
-                            condition=condition,
-                            images=[str(image)],
-                            context={"labels": labels, "focus": FOCUS[condition]},
-                            target={"material": material},
-                            meta={
-                                "labels": labels,
-                                "camera": camera,
-                                "object": scene.gt.obj.name,
-                                "object_key": scene.gt.obj.key,
-                                "phenomenon": scene.phenomenon,
-                                "look": scene.gt.provenance.look if scene.gt.provenance else None,
-                                "renderer": scene.gt.provenance.renderer
-                                if scene.gt.provenance
-                                else None,
-                            },
-                        )
+                        self._sim_question(scene, camera, condition, [str(image)], labels, material)
                     )
         return out
+
+    @staticmethod
+    def _sim_question(
+        scene: Scene,
+        camera: str,
+        condition: str,
+        images: list[str],
+        labels: list[str],
+        material: str,
+    ) -> Question:
+        provenance = scene.gt.provenance
+        return Question(
+            id=f"sim/{scene.scene_id}/{camera}/{condition}",
+            dataset="sim",
+            item_id=scene.scene_id,
+            condition=condition,
+            images=images,
+            context={"labels": labels, "focus": FOCUS[condition]},
+            target={"material": material},
+            meta={
+                "labels": labels,
+                "camera": camera,
+                "object": scene.gt.obj.name,
+                "object_key": scene.gt.obj.key,
+                "phenomenon": scene.phenomenon,
+                "look": provenance.look if provenance else None,
+                "renderer": provenance.renderer if provenance else None,
+            },
+        )
 
     @staticmethod
     def _sim_image(scene: Scene, camera: str, index: int, condition: str, margin: float):  # noqa: ANN205
@@ -144,6 +177,8 @@ class MaterialExperiment(Experiment):
             return scene.frame_path(camera, index)
         if condition == "crop":
             return scene.crop_path(camera, index, margin=margin)
+        if condition == "outline":
+            return scene.outline_path(camera, index)
         raise ValueError(f"unknown sim condition {condition!r}")
 
     # ---- scoring
