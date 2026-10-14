@@ -225,8 +225,25 @@ class MaterialExperiment(Experiment):
                 "accuracy": (correct / len(records)) if records else None,
                 "exact_label_rate": (exact / len(records)) if records else None,
                 "macro_f1_mean_over_conditions": _mean(f1s),
+                "by_camera": _accuracy_by(records, "camera"),
             }
         return out
+
+
+def _accuracy_by(records: list[ScoredRecord], key: str) -> dict[str, dict[str, Any]]:
+    """Accuracy split by a question meta field (camera, phenomenon); empty if absent."""
+    groups: dict[str, list[ScoredRecord]] = {}
+    for r in records:
+        value = r.meta.get(key)
+        if value is not None:
+            groups.setdefault(str(value), []).append(r)
+    return {
+        name: {
+            "n": len(rs),
+            "accuracy": sum(bool(r.parse_ok and r.derived["correct"]) for r in rs) / len(rs),
+        }
+        for name, rs in sorted(groups.items())
+    }
 
 
 def _labels_of(records: list[ScoredRecord]) -> list[str]:

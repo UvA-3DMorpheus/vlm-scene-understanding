@@ -65,6 +65,8 @@ def test_questions_cover_smoke_and_labelled_sim_scenes(exp: MaterialExperiment) 
     assert sorted(q.id for q in sim) == [
         "sim/sliding_cereal_box/front/crop",
         "sim/sliding_cereal_box/front/frame",
+        "sim/sliding_cereal_box/high/crop",
+        "sim/sliding_cereal_box/high/frame",
     ]
     crop = next(q for q in sim if q.condition == "crop")
     assert crop.target == {"material": "cardboard"} and crop.context["labels"] == list(
@@ -136,17 +138,20 @@ def test_dummy_pipeline_end_to_end(exp: MaterialExperiment, variant: str) -> Non
     model = DummyModel(cfg)
     questions = exp.build_questions()
     run = exp.start_run(cfg, variant, questions)
-    assert exp.run(run, model, variant) == 20
+    assert exp.run(run, model, variant) == 22
     scored = exp.score(run, variant)
-    assert len(scored) == 20 and all(s.parse_ok for s in scored)
+    assert len(scored) == 22 and all(s.parse_ok for s in scored)
     summary = exp.report(run, variant)
     assert set(summary["groups"]) == {"smoke/photo", "sim/crop", "sim/frame"}
     sim = summary["groups"]["sim/frame"]
-    assert sim["n"] == 1 and sim["confusion"]["labels"] == list(MATERIAL_CLASSES)
+    assert sim["n"] == 2 and sim["confusion"]["labels"] == list(MATERIAL_CLASSES)
+    assert set(summary["datasets"]["sim"]["by_camera"]) == {"front", "high"}
+    assert summary["datasets"]["sim"]["by_camera"]["front"]["n"] == 2
+    assert summary["datasets"]["smoke"]["by_camera"] == {}
     smoke = summary["groups"]["smoke/photo"]
     assert smoke["n"] == 18 and set(smoke["per_class"]) >= {"metal", "wood", "glass"}
     assert summary["primary_dataset"] == "sim" and summary["sanity_datasets"] == ["smoke"]
-    assert summary["datasets"]["sim"]["role"] == "primary" and summary["datasets"]["sim"]["n"] == 2
+    assert summary["datasets"]["sim"]["role"] == "primary" and summary["datasets"]["sim"]["n"] == 4
     assert (
         summary["datasets"]["smoke"]["role"] == "sanity" and summary["datasets"]["smoke"]["n"] == 18
     )
@@ -164,7 +169,7 @@ def test_failures_flow_into_the_summary(exp: MaterialExperiment) -> None:
     exp.run(run, DummyModel(cfg), "v3")
     exp.score(run, "v3")
     summary = exp.report(run, "v3")
-    assert 0 < summary["num_parse_failures"] < 20
+    assert 0 < summary["num_parse_failures"] < 22
     smoke = summary["groups"]["smoke/photo"]
     assert smoke["n"] == 18 and smoke["n_parsed"] < 18
     assert (

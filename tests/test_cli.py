@@ -67,7 +67,7 @@ def test_run_then_report(env: Path, capsys: pytest.CaptureFixture[str]) -> None:
     }
     with (tables / "exp1_sim_accuracy.csv").open() as f:
         rows = list(csv.DictReader(f))
-    assert [r["variant"] for r in rows] == ["v1", "v2", "v3"] and all(r["n"] == "2" for r in rows)
+    assert [r["variant"] for r in rows] == ["v1", "v2", "v3"] and all(r["n"] == "4" for r in rows)
     assert set(rows[0]) >= {"frame acc", "crop acc", "frame macro_f1"}
     with (tables / "exp1_smoke_accuracy.csv").open() as f:
         smoke_rows = list(csv.DictReader(f))
@@ -75,7 +75,7 @@ def test_run_then_report(env: Path, capsys: pytest.CaptureFixture[str]) -> None:
     with (tables / "exp1_sim_agreement.csv").open() as f:
         (agree,) = list(csv.DictReader(f))
     assert (
-        agree["model"] == "dummy" and agree["n_common"] == "2" and agree["variants"] == "v1,v2,v3"
+        agree["model"] == "dummy" and agree["n_common"] == "4" and agree["variants"] == "v1,v2,v3"
     )
     text = (tables / "exp1_report.md").read_text()
     assert text.index("## sim (benchmark)") < text.index("## smoke (sanity check)")

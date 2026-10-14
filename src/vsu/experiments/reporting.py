@@ -92,6 +92,21 @@ def exp1_accuracy_rows(runs: Iterable[FinishedRun], dataset: str) -> list[Row]:
     return rows
 
 
+def exp1_camera_rows(runs: Iterable[FinishedRun], dataset: str) -> list[Row]:
+    """One row per model and variant: accuracy per camera (viewpoint robustness)."""
+    rows = []
+    for fr in runs:
+        d = fr.summary.get("datasets", {}).get(dataset) or {}
+        by_camera = d.get("by_camera") or {}
+        if not by_camera:
+            continue
+        row: Row = {"model": fr.model, "variant": fr.variant}
+        for camera, c in by_camera.items():
+            row[f"{camera} (n={c['n']})"] = _r(c["accuracy"])
+        rows.append(row)
+    return rows
+
+
 def exp1_dataset_roles(runs: Sequence[FinishedRun]) -> tuple[str, list[str]]:
     """(primary dataset, sanity datasets) as recorded in the summaries."""
     for fr in runs:

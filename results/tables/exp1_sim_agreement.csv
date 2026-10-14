@@ -1,5 +1,5 @@
 model,variants,n_common,all_agree,fleiss_kappa,agree v1-v2,agree v1-v3,agree v2-v3
 dummy,"v1,v2,v3",10,0.0,0.06,0.3,0.4,0.1
-internvl3_5-8b,"v1,v2,v3",10,0.4,0.298,0.4,0.7,0.5
-llava-onevision-7b,"v1,v2,v3",10,0.3,0.292,0.4,0.6,0.5
-qwen3vl-8b,"v1,v2,v3",10,0.4,0.416,0.4,0.6,0.7
+internvl3_5-8b,"v1,v2,v3",50,0.44,0.383,0.5,0.72,0.5
+llava-onevision-7b,"v1,v2,v3",50,0.46,0.351,0.56,0.64,0.58
+qwen3vl-8b,"v1,v2,v3",50,0.46,0.486,0.5,0.74,0.58

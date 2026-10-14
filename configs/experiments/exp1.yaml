@@ -11,7 +11,8 @@ options:
   primary_dataset: sim
   sanity_datasets: [smoke]
   datasets: [smoke, sim]
-  sim_cameras: [front]
+  # front is the Morpheus style level view; the other four see motion toward or away from the camera.
+  sim_cameras: [front, left, right, high, low]
   sim_conditions: [frame, crop]
   frame_index: 0
   crop_margin: 0.2

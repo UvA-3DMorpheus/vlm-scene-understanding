@@ -1,0 +1,10 @@
+model,variant,front (n=10),high (n=10),left (n=10),low (n=10),right (n=10)
+internvl3_5-8b,v1,0.0,0.6,0.5,0.6,0.5
+internvl3_5-8b,v2,0.4,0.5,0.4,0.5,0.4
+internvl3_5-8b,v3,0.1,0.4,0.3,0.5,0.5
+llava-onevision-7b,v1,0.5,0.5,0.5,0.6,0.5
+llava-onevision-7b,v2,0.2,0.4,0.4,0.4,0.4
+llava-onevision-7b,v3,0.4,0.4,0.2,0.2,0.4
+qwen3vl-8b,v1,0.5,0.5,0.3,0.6,0.4
+qwen3vl-8b,v2,0.4,0.3,0.4,0.5,0.4
+qwen3vl-8b,v3,0.5,0.4,0.3,0.7,0.6

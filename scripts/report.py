@@ -20,6 +20,7 @@ from vsu.experiments import EXPERIMENTS
 from vsu.experiments.reporting import (
     exp1_accuracy_rows,
     exp1_agreement_rows,
+    exp1_camera_rows,
     exp1_confusion_tables,
     exp1_dataset_roles,
     exp1_per_material_rows,
@@ -58,10 +59,17 @@ def report_exp1(out: Path, settings) -> list[Path]:  # type: ignore[no-untyped-d
             path = out / f"exp1_{dataset}_{name}.csv"
             write_csv(path, rows)
             written.append(path)
+        cameras = exp1_camera_rows(runs, dataset)
         parts += [
             f"## {title}\n",
             "### Accuracy and macro F1 per condition\n",
             markdown_table(acc),
+        ]
+        if cameras:
+            write_csv(out / f"exp1_{dataset}_cameras.csv", cameras)
+            written.append(out / f"exp1_{dataset}_cameras.csv")
+            parts += ["### Accuracy per camera (viewpoint robustness)\n", markdown_table(cameras)]
+        parts += [
             "### Agreement across prompt variants\n",
             markdown_table(agree),
             "### Per material recall (which materials are recognisable at all)\n",
