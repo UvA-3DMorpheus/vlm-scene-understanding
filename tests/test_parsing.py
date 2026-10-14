@@ -5,7 +5,12 @@ from __future__ import annotations
 import pytest
 
 from vsu.schemas import ComparativeAnswer, MaterialAnswer, PropertiesAnswer, SceneInitAnswer
-from vsu.utils.parsing import JSONNotFound, extract_json, parse_answer
+from vsu.utils.parsing import (
+    JSONNotFound,
+    extract_json,
+    parse_answer,
+    strip_reasoning,
+)
 
 # ---------------------------------------------------------------- extract_json
 
@@ -180,3 +185,33 @@ def test_parse_scene_config_invalid_angle_fails_with_location() -> None:
     )
     r = parse_answer(text, SceneInitAnswer, "s2")
     assert not r.ok and r.error is not None and "surface.ramp_angle_deg" in r.error
+
+
+# ---------------------------------------------------------------- reasoning models
+
+
+def test_strip_reasoning_removes_think_blocks_and_box_markers() -> None:
+    text = "<think>Got it, a bearing, so metal.</think>\n<|begin_of_box|>metal<|end_of_box|>"
+    assert strip_reasoning(text) == "metal"
+    boxed_json = (
+        '<think>x</think>\n<|begin_of_box|>{"material": "steel", "confidence": 0.95}<|end_of_box|>'
+    )
+    assert strip_reasoning(boxed_json) == '{"material": "steel", "confidence": 0.95}'
+    assert strip_reasoning("<think>never closed because the budget ran out") == ""
+    assert strip_reasoning("plain answer") == "plain answer"
+    assert strip_reasoning("") == ""
+
+
+def test_parse_answer_handles_reasoning_model_output() -> None:
+    v1 = "<think>Got it, a bearing, so metal.</think>\n<|begin_of_box|>metal<|end_of_box|>"
+    r = parse_answer(v1, MaterialAnswer, "q", bare_label_field="material")
+    assert r.ok and r.answer is not None and r.answer.material == "metal"
+    v2 = (
+        "<think>steel, high confidence</think>\n"
+        '<|begin_of_box|>{"material": "steel", "confidence": 0.95}<|end_of_box|>'
+    )
+    r = parse_answer(v2, MaterialAnswer, "q")
+    assert r.ok and r.answer is not None and r.answer.material == "steel"
+    truncated = "<think>" + "thinking " * 50
+    r = parse_answer(truncated, MaterialAnswer, "q", bare_label_field="material")
+    assert not r.ok and r.error == "empty response"

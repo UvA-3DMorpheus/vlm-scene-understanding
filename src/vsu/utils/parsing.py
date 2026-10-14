@@ -22,10 +22,28 @@ _FENCE = re.compile(r"```(?:json|JSON|javascript|js)?\s*\n?(.*?)```", re.DOTALL)
 _TRAILING_COMMA = re.compile(r",\s*([}\]])")
 _PY_LITERALS = {r"\bTrue\b": "true", r"\bFalse\b": "false", r"\bNone\b": "null", r"\bNaN\b": "null"}
 _MAX_BARE_LABEL_CHARS = 80
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+_OPEN_THINK = re.compile(r"<think>.*\Z", re.DOTALL | re.IGNORECASE)
+_BOX_MARKERS = re.compile(r"<\|begin_of_box\|>|<\|end_of_box\|>")
 
 
 class JSONNotFound(ValueError):
     """Raised when no JSON object can be recovered from the text."""
+
+
+def strip_reasoning(text: str) -> str:
+    """Remove a reasoning model's scratch work so only the final answer is parsed.
+
+    Drops ``<think>…</think>`` blocks (and an unterminated ``<think>`` tail, which means
+    the token budget ran out mid-thought) and unwraps ``<|begin_of_box|>…<|end_of_box|>``
+    answer markers (GLM-4.xV). Plain text passes through unchanged.
+    """
+    if not text:
+        return text
+    cleaned = _THINK_BLOCK.sub("", text)
+    cleaned = _OPEN_THINK.sub("", cleaned)
+    cleaned = _BOX_MARKERS.sub("", cleaned)
+    return cleaned.strip()
 
 
 def _balanced_objects(text: str) -> list[str]:
@@ -130,16 +148,18 @@ def parse_answer(
     """Turn one model response into a ``ParsedAnswer`` of ``model``.
 
     Consumes the raw text, the answer model to validate against and the question id.
+    Reasoning blocks and answer markers are stripped first (:func:`strip_reasoning`).
     Produces a record with ``ok=True`` and the typed answer, or ``ok=False`` and a short
     error. With ``bare_label_field`` set (for example ``"material"``), a response that
     contains no JSON but is a single short line is accepted as ``{field: line}``, which
     is what a closed set prompt asking for one word produces.
     """
+    text = strip_reasoning(text or "")
     data: dict[str, Any] | None = None
     try:
         data = extract_json(text)
     except JSONNotFound as exc:
-        stripped = (text or "").strip().strip("`*_\"' ").strip()
+        stripped = text.strip().strip("`*_\"' ").strip()
         if (
             bare_label_field is not None
             and stripped
