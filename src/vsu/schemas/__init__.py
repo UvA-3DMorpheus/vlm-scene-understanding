@@ -1,1 +1,53 @@
 """Pydantic models: internal scene representation and typed answers."""
+
+from vsu.schemas.answers import (
+    ComparativeAnswer,
+    MaterialAnswer,
+    ParsedAnswer,
+    PropertiesAnswer,
+    PropertyEstimate,
+    PropertyRange,
+    SceneInitAnswer,
+    normalize_label,
+)
+from vsu.schemas.scene import (
+    CAMERA_NAMES,
+    MATERIAL_CLASSES,
+    SCENARIO_TO_PHENOMENON,
+    Camera,
+    Contact,
+    Expected,
+    FrameState,
+    GroundTruth,
+    ObjectConfig,
+    Provenance,
+    SceneConfig,
+    SceneObject,
+    Surface,
+    SurfaceConfig,
+)
+
+__all__ = [
+    "CAMERA_NAMES",
+    "MATERIAL_CLASSES",
+    "SCENARIO_TO_PHENOMENON",
+    "Camera",
+    "ComparativeAnswer",
+    "Contact",
+    "Expected",
+    "FrameState",
+    "GroundTruth",
+    "MaterialAnswer",
+    "ObjectConfig",
+    "ParsedAnswer",
+    "PropertiesAnswer",
+    "PropertyEstimate",
+    "PropertyRange",
+    "Provenance",
+    "SceneConfig",
+    "SceneInitAnswer",
+    "SceneObject",
+    "Surface",
+    "SurfaceConfig",
+    "normalize_label",
+]
