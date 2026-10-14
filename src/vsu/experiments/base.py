@@ -226,6 +226,24 @@ def environment_record() -> dict[str, Any]:
     }
 
 
+def error_response(model: VLM, error: str) -> Response:
+    """A placeholder response for a question the backend could not answer.
+
+    Stored in ``raw.jsonl`` like any answer so the question is not silently missing; it
+    parses as a failure and ``summary.json`` counts it under ``num_errors``.
+    """
+    return Response(
+        text="",
+        model_id=model.model_id,
+        backend_model=model.backend_model,
+        decoding=model.default_decoding,
+        latency_s=0.0,
+        cached=False,
+        request_hash="error",
+        extra={"error": error[:1000]},
+    )
+
+
 # ---------------------------------------------------------------- experiment
 
 
@@ -390,9 +408,13 @@ class Experiment(ABC):
         model.prepare()
         for question in tqdm(todo, desc=f"{self.name} {model.model_id} {variant}", unit="q"):
             prompt = self.render_prompt(question, variant)
-            response = model.generate(
-                question.images, prompt, schema=self.answer_schema, use_cache=use_cache
-            )
+            try:
+                response = model.generate(
+                    question.images, prompt, schema=self.answer_schema, use_cache=use_cache
+                )
+            except Exception as exc:  # noqa: BLE001 - one bad question must not abort the run
+                log.error("%s: model error on %s: %r", self.name, question.id, exc)
+                response = error_response(model, repr(exc))
             record = RawRecord(
                 question_id=question.id, prompt=prompt, images=question.images, response=response
             )
@@ -423,7 +445,9 @@ class Experiment(ABC):
                     answer=None if parsed.answer is None else parsed.answer.model_dump(mode="json"),
                     target=question.target,
                     derived=derived,
-                    meta=question.meta,
+                    meta={**question.meta, "_error": raw.response.extra.get("error")}
+                    if raw.response.extra.get("error")
+                    else question.meta,
                     cached=raw.response.cached,
                     latency_s=raw.response.latency_s,
                 )
@@ -440,6 +464,7 @@ class Experiment(ABC):
             "num_questions": len(run.read_questions()),
             "num_answered": len(scored),
             "num_parse_failures": sum(not s.parse_ok for s in scored),
+            "num_errors": sum(bool(s.meta.get("_error")) for s in scored),
             "parse_failure_rate": (sum(not s.parse_ok for s in scored) / len(scored))
             if scored
             else None,

@@ -268,3 +268,25 @@ def test_read_jsonl_tolerates_blank_lines(tmp_path: Path) -> None:
     p.write_text('{"a": 1}\n\n{"a": 2}\n')
     assert [r["a"] for r in read_jsonl(p)] == [1, 2]
     assert list(read_jsonl(tmp_path / "missing.jsonl")) == []
+
+
+def test_backend_error_is_recorded_and_the_run_continues(exp: LabelExperiment) -> None:
+    cfg, model = dummy()
+
+    class Flaky(DummyModel):
+        def _generate(self, images, prompt, schema, decoding):  # type: ignore[no-untyped-def]
+            if "One of" in prompt and images and images[0].pil.getpixel((0, 0))[0] == 40:
+                raise RuntimeError("context length exceeded")
+            return super()._generate(images, prompt, schema, decoding)
+
+    run = exp.start_run(cfg, "v1", exp.build_questions())
+    assert exp.run(run, Flaky(cfg), "v1") == N
+    raw = run.read_raw()
+    errors = [r for r in raw if r.response.extra.get("error")]
+    assert len(errors) == 1 and "context length" in errors[0].response.extra["error"]
+    assert errors[0].response.text == "" and errors[0].response.request_hash == "error"
+    scored = exp.score(run, "v1")
+    bad = [s for s in scored if s.meta.get("_error")]
+    assert len(bad) == 1 and not bad[0].parse_ok
+    summary = exp.report(run, "v1")
+    assert summary["num_errors"] == 1 and summary["num_parse_failures"] >= 1
