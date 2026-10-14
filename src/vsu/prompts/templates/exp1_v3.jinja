@@ -1,0 +1,9 @@
+Look carefully at {{ focus }}.
+
+First, in two or three sentences, describe the visual cues that reveal what it is made of: surface finish, texture, reflections, edges, printed text, and the setting it appears in.
+
+Then choose exactly one label from this list: {{ labels | join(', ') }}
+
+Finish with a JSON object on its own line:
+
+{"material": "<label from the list>", "confidence": <number between 0 and 1>, "reasoning": "<one sentence>"}
