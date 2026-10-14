@@ -1,0 +1,13 @@
+experiment,model,variant,run,commit,dirty,template_sha256,hostname,slurm_job_id,backend_model
+exp1,dummy,v1,20261014T123348Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,880c81b387b5,int4.local.snellius.surf.nl,,dummy
+exp1,dummy,v2,20261014T123349Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,958a9e9ec6a8,int4.local.snellius.surf.nl,,dummy
+exp1,dummy,v3,20261014T123349Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,2b3d48ffff02,int4.local.snellius.surf.nl,,dummy
+exp1,internvl3_5-8b,v1,20261014T123926Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,880c81b387b5,gcn27.local.snellius.surf.nl,28076775,OpenGVLab/InternVL3_5-8B-HF
+exp1,internvl3_5-8b,v2,20261014T124037Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,958a9e9ec6a8,gcn27.local.snellius.surf.nl,28076775,OpenGVLab/InternVL3_5-8B-HF
+exp1,internvl3_5-8b,v3,20261014T124102Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,2b3d48ffff02,gcn27.local.snellius.surf.nl,28076775,OpenGVLab/InternVL3_5-8B-HF
+exp1,llava-onevision-7b,v1,20261014T123926Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,880c81b387b5,gcn62.local.snellius.surf.nl,28076776,llava-hf/llava-onevision-qwen2-7b-ov-hf
+exp1,llava-onevision-7b,v2,20261014T124034Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,958a9e9ec6a8,gcn62.local.snellius.surf.nl,28076776,llava-hf/llava-onevision-qwen2-7b-ov-hf
+exp1,llava-onevision-7b,v3,20261014T124059Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,2b3d48ffff02,gcn62.local.snellius.surf.nl,28076776,llava-hf/llava-onevision-qwen2-7b-ov-hf
+exp1,qwen3vl-8b,v1,20261014T123926Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,880c81b387b5,gcn27.local.snellius.surf.nl,28076774,Qwen/Qwen3-VL-8B-Instruct
+exp1,qwen3vl-8b,v2,20261014T124032Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,958a9e9ec6a8,gcn27.local.snellius.surf.nl,28076774,Qwen/Qwen3-VL-8B-Instruct
+exp1,qwen3vl-8b,v3,20261014T124052Z,b81949ee732fb5e3ba52bc5af4aa377c52946077,True,2b3d48ffff02,gcn27.local.snellius.surf.nl,28076774,Qwen/Qwen3-VL-8B-Instruct

@@ -1,0 +1,5 @@
+model,variants,n_common,all_agree,fleiss_kappa,agree v1-v2,agree v1-v3,agree v2-v3
+dummy,"v1,v2,v3",18,0.0,-0.079,0.222,0.056,0.167
+internvl3_5-8b,"v1,v2,v3",18,0.778,0.83,0.778,1.0,0.778
+llava-onevision-7b,"v1,v2,v3",18,0.778,0.824,0.833,0.778,0.944
+qwen3vl-8b,"v1,v2,v3",18,0.667,0.748,0.667,1.0,0.667
