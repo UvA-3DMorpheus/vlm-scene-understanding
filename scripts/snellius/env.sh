@@ -40,6 +40,10 @@ export VSU_CACHE_ROOT="${VSU_RESULTS_ROOT}/.cache"
 export VSU_LOGS_ROOT="${VSU_PROJECT_DIR}/logs/vlm-scene-understanding"
 export HF_HOME="${VSU_PROJECT_DIR}/models/hf"
 export VLLM_CACHE_ROOT="${VSU_PROJECT_DIR}/models/vllm"
+# Pinned checkout of the simulation team's 3D-Simulations repository (scripts/generate_sim.py).
+export VSU_SIM_REPO="${VSU_SIM_REPO:-${VSU_PROJECT_DIR}/envs/3D-Simulations}"
+# Headless rendering for MuJoCo (EGL works on login and GPU nodes).
+export MUJOCO_GL="${MUJOCO_GL:-egl}"
 
 # --- uv: binary, download cache, managed Python and the project environment -------------
 # Everything uv writes goes to the project space, never to home (200 GB quota, shared quota

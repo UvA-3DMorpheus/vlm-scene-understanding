@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Create or update the Python environment in the project space with uv.
 #
-#     bash scripts/snellius/setup_env.sh            # core + dev + hf + api extras
-#     bash scripts/snellius/setup_env.sh --no-gpu   # core + dev + api only (login node tests)
+#     bash scripts/snellius/setup_env.sh            # core + dev + hf + api + sim extras
+#     bash scripts/snellius/setup_env.sh --no-gpu   # core + dev + api + sim (login node tests, scene generation)
 #
 # Installs uv into VSU_PROJECT_DIR/envs/bin if missing, lets uv install the managed
 # CPython 3.11 from .python-version into VSU_PROJECT_DIR/envs/python, and syncs the
@@ -24,9 +24,9 @@ cd "${VSU_REPO_DIR}"
 uv python install            # version from .python-version, into UV_PYTHON_INSTALL_DIR
 
 if [[ "${1:-}" == "--no-gpu" ]]; then
-  uv sync --extra api
+  uv sync --extra api --extra sim
 else
-  uv sync --extra api --extra hf
+  uv sync --extra api --extra hf --extra sim
 fi
 
 echo "Environment ready at ${UV_PROJECT_ENVIRONMENT}"
