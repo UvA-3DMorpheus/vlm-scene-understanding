@@ -4452,6 +4452,7 @@ api = [
 ]
 hf = [
     { name = "accelerate" },
+    { name = "compressed-tensors" },
     { name = "huggingface-hub" },
     { name = "qwen-vl-utils" },
     { name = "torch" },
@@ -4477,6 +4478,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", marker = "extra == 'hf'", specifier = ">=1.0" },
+    { name = "compressed-tensors", marker = "extra == 'hf'", specifier = ">=0.10" },
     { name = "google-genai", marker = "extra == 'api'", specifier = ">=1.0" },
     { name = "huggingface-hub", marker = "extra == 'hf'", specifier = ">=0.34" },
     { name = "imageio", marker = "extra == 'sim'", specifier = ">=2.31" },

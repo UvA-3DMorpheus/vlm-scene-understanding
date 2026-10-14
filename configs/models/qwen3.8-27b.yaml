@@ -1,0 +1,12 @@
+# Qwen3.8 27B: newest Qwen generation, natively multimodal (Qwen3_5ForConditionalGeneration).
+# About 56 GB in bf16: one gpu_h100. Thinking is switched off so answers stay short JSON.
+backend: hf
+hf_id: Qwen/Qwen3.8-27B
+dtype: bfloat16
+decoding: {temperature: 0.0, max_tokens: 1024}
+options:
+  attn_implementation: sdpa
+  chat_template_kwargs: {enable_thinking: false}
+notes: >
+  Submit with sbatch --partition=gpu_h100 --cpus-per-task=16. Strong open model of the Qwen family;
+  the 8B Qwen3-VL config is the baseline of the same family.

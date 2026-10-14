@@ -1,0 +1,12 @@
+# GLM-4.6V-Flash (Zhipu): 10B dense member of the GLM-4.6V family, bf16 about 21 GB, one gpu_a100.
+# Fourth model family at the baseline tier; the 107B MoE needs four H100 in bf16.
+backend: hf
+hf_id: zai-org/GLM-4.6V-Flash
+dtype: bfloat16
+decoding: {temperature: 0.0, max_tokens: 1024}
+options:
+  attn_implementation: sdpa
+  # The model reasons in <think> blocks by default; off keeps answers short. The parser strips
+  # such blocks anyway, so runs made before this setting still score.
+  chat_template_kwargs: {enable_thinking: false}
+notes: Native transformers format (Glm4vForConditionalGeneration).

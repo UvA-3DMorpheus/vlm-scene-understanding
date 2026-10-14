@@ -1,0 +1,8 @@
+# Gemma 4 31B (Google), ungated. About 63 GB in bf16: one gpu_h100.
+backend: hf
+hf_id: google/gemma-4-31B-it
+dtype: bfloat16
+decoding: {temperature: 0.0, max_tokens: 1024}
+options:
+  attn_implementation: sdpa
+notes: Submit with sbatch --partition=gpu_h100 --cpus-per-task=16. Third model family at the strong tier.

@@ -7,8 +7,11 @@ experiment job loads it once and loops variants inside. The ``schema`` argument 
 used for constrained decoding here; the prompt template describes the JSON shape.
 
 Config ``options`` understood: ``attn_implementation`` (sdpa, eager, flash_attention_2),
-``max_pixels`` and ``min_pixels`` (Qwen image processors), ``device_map`` (default auto),
-``trust_remote_code`` (default false).
+``max_pixels`` and ``min_pixels`` (Qwen image processors), ``device_map`` (default auto,
+which also spreads a model over every GPU of the job), ``trust_remote_code`` (default
+false), ``chat_template_kwargs`` (extra variables for the chat template, for example
+``enable_thinking: false`` for models that reason by default). FP8 checkpoints in the
+compressed-tensors format load as they are; they need a Hopper GPU (gpu_h100).
 """
 
 from __future__ import annotations
@@ -49,6 +52,7 @@ def load_transformers_model(config: ModelConfig, settings: Settings | None) -> t
     }
     if "attn_implementation" in opts:
         model_kwargs["attn_implementation"] = opts.pop("attn_implementation")
+    opts.pop("chat_template_kwargs", None)  # used at generation time, not at load time
     if opts:
         log.warning("%s: unused options %s", config.name, sorted(opts))
     log.info("loading %s (%s, %s)", config.hf_id, config.dtype, model_kwargs["device_map"])
@@ -138,6 +142,7 @@ class HFModel(VLM):
             tokenize=True,
             return_dict=True,
             return_tensors="pt",
+            **dict(self.config.options.get("chat_template_kwargs") or {}),
         )
         inputs = inputs.to(model.device)
         prompt_len = int(inputs["input_ids"].shape[1])

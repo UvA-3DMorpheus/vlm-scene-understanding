@@ -1,0 +1,8 @@
+# InternVL 3.5 14B: about 30 GB in bf16, one gpu_a100. Strong tier of the InternVL family.
+backend: hf
+hf_id: OpenGVLab/InternVL3_5-14B-HF
+dtype: bfloat16
+decoding: {temperature: 0.0, max_tokens: 1024}
+options:
+  attn_implementation: sdpa
+notes: Native transformers format; the 8B config is the baseline of the same family.
