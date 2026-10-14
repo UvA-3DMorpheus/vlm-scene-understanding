@@ -1,0 +1,49 @@
+{
+ "version": "1.0.0",
+ "description": "Single source of truth for surface and object material properties and the object-surface contact parameters used by the scenarios. Scenes copy the values they use into their ground truth.",
+ "surfaces": {
+  "finished_wood": {
+   "label": "finished (varnished) wood, tabletop / ramp",
+   "density_kg_m3": 700,
+   "density_note": "typical hardwood 600-800 kg/m3"
+  }
+ },
+ "materials": {
+  "ceramic": {"label": "ceramic (glazed porcelain)", "density_kg_m3": 2400, "density_note": "porcelain 2300-2500 kg/m3"},
+  "metal": {"label": "metal (painted steel)", "density_kg_m3": 7850, "density_note": "steel 7750-8050 kg/m3"},
+  "plastic": {"label": "plastic (ABS)", "density_kg_m3": 1050, "density_note": "ABS 1040-1070 kg/m3"},
+  "cardboard": {"label": "cardboard (printed paperboard)", "density_kg_m3": 700, "density_note": "paperboard 600-800 kg/m3"},
+  "book_paper_cover": {"label": "book (paper cover)", "density_kg_m3": 800, "density_note": "bound paper 700-1000 kg/m3"}
+ },
+ "contacts": {
+  "finished_wood": {
+   "ceramic": {"mu_kinetic": 0.20, "mu_static": 0.25, "restitution": null, "source": "illustrative value within published ranges"},
+   "metal": {"mu_kinetic": 0.30, "mu_static": 0.38, "restitution": null, "source": "illustrative value within published ranges"},
+   "plastic": {"mu_kinetic": 0.35, "mu_static": 0.43, "restitution": null, "source": "illustrative value within published ranges"},
+   "cardboard": {"mu_kinetic": 0.40, "mu_static": 0.50, "restitution": null, "source": "illustrative value within published ranges"},
+   "book_paper_cover": {"mu_kinetic": 0.45, "mu_static": 0.55, "restitution": null, "source": "illustrative value within published ranges"}
+  }
+ },
+ "objects": {
+  "Threshold_Tray_Rectangle_Porcelain": {
+   "material": "ceramic", "mass_basis": "material_density", "estimated_mass_kg": null,
+   "mass_note": "solid porcelain: the scanned shell is the material itself, so mass = ceramic density x mesh volume"
+  },
+  "Victor_Reversible_Bookend": {
+   "material": "metal", "mass_basis": "effective_density", "estimated_mass_kg": 0.9,
+   "mass_note": "estimate for a hollow desk organiser with drawers (not measured); effective density = estimated mass / outer mesh volume. Material class chosen as metal; it may be painted wood"
+  },
+  "Hasbro_Life_Board_Game": {
+   "material": "cardboard", "mass_basis": "effective_density", "estimated_mass_kg": 1.4,
+   "mass_note": "estimate for the boxed game with contents (not measured); effective density = estimated mass / outer mesh volume"
+  },
+  "Eat_to_Live_The_Amazing_NutrientRich_Program_for_Fast_and_Sustained_Weight_Loss_Revised_Edition_Book": {
+   "material": "book_paper_cover", "mass_basis": "effective_density", "estimated_mass_kg": 0.45,
+   "mass_note": "estimate for a ~400-page paperback (not measured); effective density = estimated mass / outer mesh volume"
+  },
+  "Vans_Cereal_Honey_Nut_Crunch_11_oz_box": {
+   "material": "cardboard", "mass_basis": "effective_density", "estimated_mass_kg": 0.37,
+   "mass_note": "estimate: 11 oz (312 g) of cereal plus carton and liner (not measured); effective density = estimated mass / outer mesh volume"
+  }
+ }
+}

@@ -1,0 +1,185 @@
+# Typical property ranges per material class, used by the material first estimator
+# (Experiment 2, E2b) and by the synonym mapping of the open set material prompt (Experiment 1, V2).
+#
+# This is OUR table. The values the simulator actually used are in materials.json (verbatim copy
+# of the simulation team's file, illustrative point values) and in each scene's ground truth.
+# Keys: the five classes of materials.json first, then the extra classes of the smoke set and
+# Physion++. Every row lists the sources its numbers come from; ranges are deliberately wide
+# and should be checked against the cited tables before they appear in a paper.
+#
+# Fields per material:
+#   density_kg_m3             solid material density [low, high]
+#   restitution               coefficient of restitution of a ball of the material dropped on a hard
+#                             rigid surface [low, high]
+#   friction_static_on_wood   mu_s against finished wood [low, high]; friction_kinetic_on_wood: mu_k
+#   friction_static_on_steel  mu_s against dry steel [low, high]; friction_kinetic_on_steel: mu_k
+#   hardness                  qualitative: low, medium, high
+#   aliases                   free text labels that map onto this key (lower case, underscores)
+
+version: 1
+
+sources:
+  serway: "Serway and Jewett, Physics for Scientists and Engineers, Table 5.1, Coefficients of friction (steel on steel 0.74 / 0.57, aluminum on steel 0.61 / 0.47, rubber on concrete 1.0 / 0.8, wood on wood 0.25-0.5 / 0.2, glass on glass 0.94 / 0.4)"
+  etb_friction: "The Engineering ToolBox, Friction and friction coefficients for various materials, https://www.engineeringtoolbox.com/friction-coefficients-d_778.html"
+  etb_density: "The Engineering ToolBox, Densities of common materials, https://www.engineeringtoolbox.com/density-materials-d_1652.html and density of solids d_1265"
+  cross1999: "Cross, R. (1999). The bounce of a ball. American Journal of Physics 67(3), 222-227 (measured COR of golf, tennis, steel, superball and similar balls)"
+  ittf: "ITTF Technical Leaflet T3, The Ball: a 40 mm ball dropped from 305 mm onto a steel block must bounce 240-260 mm (COR about 0.89-0.92)"
+  sim_materials_json: "3D-Simulations materials.json v1.0.0 (Emil Halliday): ceramic 2400, metal 7850, plastic 1050, cardboard 700, book 800 kg/m3; mu_k / mu_s on finished wood 0.20/0.25, 0.30/0.38, 0.35/0.43, 0.40/0.50, 0.45/0.55"
+  estimate: "Our own estimate where no measured source was found; marked in the notes"
+
+materials:
+  ceramic:
+    label: ceramic (glazed porcelain, stoneware)
+    aliases: [porcelain, stoneware, china, glazed_ceramic, pottery, earthenware, tile]
+    density_kg_m3: [2200, 2600]
+    restitution: [0.6, 0.9]
+    friction_static_on_wood: [0.2, 0.4]
+    friction_kinetic_on_wood: [0.15, 0.35]
+    friction_static_on_steel: [0.2, 0.5]
+    friction_kinetic_on_steel: [0.15, 0.4]
+    hardness: high
+    notes: "Density from porcelain 2300-2500; friction on wood centred on the simulator's 0.20 / 0.25; restitution of glazed ceramic is high but chipping absorbs energy, so the range is wide (estimate)."
+    sources: [etb_density, sim_materials_json, estimate]
+
+  metal:
+    label: metal (steel, painted or bare)
+    aliases: [steel, stainless_steel, iron, cast_iron, chrome, brass, copper, metallic, painted_metal, tin]
+    density_kg_m3: [7000, 8900]
+    restitution: [0.55, 0.9]
+    friction_static_on_wood: [0.2, 0.6]
+    friction_kinetic_on_wood: [0.2, 0.5]
+    friction_static_on_steel: [0.5, 0.8]
+    friction_kinetic_on_steel: [0.4, 0.6]
+    hardness: high
+    notes: "Steel 7750-8050, copper and brass up to 8900; aluminium is a separate row. Steel on wood mu 0.2-0.6 (etb); steel on steel 0.74 / 0.57 (serway); hardened steel balls bounce with COR up to about 0.9 (cross1999)."
+    sources: [etb_density, etb_friction, serway, cross1999, sim_materials_json]
+
+  aluminium:
+    label: aluminium
+    aliases: [aluminum, alu, anodised_aluminium, anodized_aluminum]
+    density_kg_m3: [2600, 2800]
+    restitution: [0.5, 0.8]
+    friction_static_on_wood: [0.2, 0.6]
+    friction_kinetic_on_wood: [0.2, 0.5]
+    friction_static_on_steel: [0.45, 0.65]
+    friction_kinetic_on_steel: [0.4, 0.5]
+    hardness: medium
+    notes: "Aluminium on steel 0.61 / 0.47 (serway); on wood assumed as for steel (etb); restitution is an estimate, softer than steel."
+    sources: [etb_density, etb_friction, serway, estimate]
+
+  plastic:
+    label: hard plastic (ABS, polycarbonate, PVC)
+    aliases: [abs, hard_plastic, polycarbonate, pvc, polystyrene, nylon, acrylic, plexiglass, plastic_shell]
+    density_kg_m3: [1000, 1450]
+    restitution: [0.5, 0.8]
+    friction_static_on_wood: [0.3, 0.5]
+    friction_kinetic_on_wood: [0.25, 0.45]
+    friction_static_on_steel: [0.25, 0.5]
+    friction_kinetic_on_steel: [0.2, 0.4]
+    hardness: medium
+    notes: "ABS 1040-1070, PVC up to 1450 (etb); friction on wood centred on the simulator's 0.35 / 0.43; restitution of hard plastic balls 0.5-0.8 (estimate from cross1999 style measurements)."
+    sources: [etb_density, sim_materials_json, estimate]
+
+  ping_pong_plastic:
+    label: ping pong ball (thin celluloid or ABS shell, hollow)
+    aliases: [ping_pong, ping_pong_ball, table_tennis_ball, table_tennis]
+    density_kg_m3: [70, 90]
+    restitution: [0.85, 0.93]
+    friction_static_on_wood: [0.2, 0.4]
+    friction_kinetic_on_wood: [0.15, 0.35]
+    friction_static_on_steel: [0.2, 0.4]
+    friction_kinetic_on_steel: [0.15, 0.3]
+    hardness: low
+    notes: "Effective density of the hollow ball: 2.7 g in a 40 mm sphere (33.5 cm3) is about 80 kg/m3; the shell material itself is 1050-1400. COR from the ITTF bounce test (ittf). Friction is an estimate."
+    sources: [ittf, estimate]
+
+  rubber:
+    label: rubber (solid, natural or synthetic)
+    aliases: [rubber_ball, bouncy_ball, superball, silicone, elastomer, latex, neoprene]
+    density_kg_m3: [900, 1300]
+    restitution: [0.6, 0.95]
+    friction_static_on_wood: [0.6, 1.0]
+    friction_kinetic_on_wood: [0.5, 0.9]
+    friction_static_on_steel: [0.6, 1.0]
+    friction_kinetic_on_steel: [0.5, 0.9]
+    hardness: low
+    notes: "Natural rubber 920-1000, filled compounds up to 1300 (etb); superballs reach COR 0.9+ (cross1999), ordinary rubber balls 0.6-0.8; rubber on dry solids mu around 0.6-1.0 (serway rubber on concrete 1.0 / 0.8, etb)."
+    sources: [etb_density, etb_friction, serway, cross1999]
+
+  wood:
+    label: wood (solid, hardwood or softwood)
+    aliases: [wooden, oak, pine, beech, birch, plywood, timber, hardwood, softwood, mdf, bamboo]
+    density_kg_m3: [400, 900]
+    restitution: [0.4, 0.6]
+    friction_static_on_wood: [0.25, 0.5]
+    friction_kinetic_on_wood: [0.2, 0.4]
+    friction_static_on_steel: [0.2, 0.6]
+    friction_kinetic_on_steel: [0.2, 0.5]
+    hardness: medium
+    notes: "Softwoods about 400-550, hardwoods 600-900 (etb); wood on wood 0.25-0.5 / 0.2 (serway); wood on steel 0.2-0.6 (etb); restitution of a wooden ball on a hard floor is an estimate."
+    sources: [etb_density, etb_friction, serway, estimate]
+
+  glass:
+    label: glass
+    aliases: [glass_marble, marble, crystal, glass_ball, glassy]
+    density_kg_m3: [2400, 2800]
+    restitution: [0.7, 0.95]
+    friction_static_on_wood: [0.2, 0.4]
+    friction_kinetic_on_wood: [0.15, 0.35]
+    friction_static_on_steel: [0.4, 0.7]
+    friction_kinetic_on_steel: [0.3, 0.6]
+    hardness: high
+    notes: "Soda lime glass 2400-2800 (etb); glass on glass 0.94 / 0.4 (serway); glass marbles on a hard plate bounce with COR close to 0.9 (cross1999 style measurements); friction on wood is an estimate."
+    sources: [etb_density, serway, cross1999, estimate]
+
+  foam:
+    label: foam (polyurethane, EVA, polystyrene foam)
+    aliases: [sponge, foam_ball, nerf, styrofoam, polystyrene_foam, eva_foam, soft_foam, cushion]
+    density_kg_m3: [15, 200]
+    restitution: [0.1, 0.5]
+    friction_static_on_wood: [0.4, 0.9]
+    friction_kinetic_on_wood: [0.3, 0.8]
+    friction_static_on_steel: [0.4, 0.9]
+    friction_kinetic_on_steel: [0.3, 0.8]
+    hardness: low
+    notes: "Expanded polystyrene 15-30, EVA and PU foams 30-200 (etb); foam balls lose most of the impact energy (estimate); friction is high and rate dependent (estimate)."
+    sources: [etb_density, estimate]
+
+  cardboard:
+    label: cardboard and paper (boxes, paperboard, corrugated board)
+    aliases: [paper, paperboard, corrugated_cardboard, carton, box_board, cardboard_box, packaging, paper_box]
+    density_kg_m3: [100, 800]
+    restitution: [0.1, 0.4]
+    friction_static_on_wood: [0.4, 0.6]
+    friction_kinetic_on_wood: [0.3, 0.5]
+    friction_static_on_steel: [0.3, 0.6]
+    friction_kinetic_on_steel: [0.3, 0.5]
+    hardness: low
+    notes: "Paperboard 600-800 as a solid sheet, corrugated board 100-300 effective (etb); friction on wood centred on the simulator's 0.40 / 0.50; restitution is an estimate (boxes crumple)."
+    sources: [etb_density, sim_materials_json, estimate]
+
+  book_paper_cover:
+    label: book with a paper cover (bound paper block)
+    aliases: [book, paperback, paperback_book, bound_paper, magazine, notebook]
+    density_kg_m3: [700, 1000]
+    restitution: [0.1, 0.3]
+    friction_static_on_wood: [0.45, 0.65]
+    friction_kinetic_on_wood: [0.35, 0.55]
+    friction_static_on_steel: [0.3, 0.6]
+    friction_kinetic_on_steel: [0.3, 0.5]
+    hardness: low
+    notes: "Bound paper 700-1000 (etb); friction on wood centred on the simulator's 0.45 / 0.55; a book does not bounce (estimate)."
+    sources: [etb_density, sim_materials_json, estimate]
+
+  clay:
+    label: clay or putty (plasticine, modelling clay)
+    aliases: [putty, plasticine, modelling_clay, modeling_clay, play_doh, dough]
+    density_kg_m3: [1400, 2000]
+    restitution: [0.0, 0.1]
+    friction_static_on_wood: [0.5, 1.0]
+    friction_kinetic_on_wood: [0.4, 0.9]
+    friction_static_on_steel: [0.5, 1.0]
+    friction_kinetic_on_steel: [0.4, 0.9]
+    hardness: low
+    notes: "Wet clay 1600-1800, plasticine around 1500-1900 (etb); an inelastic collision by definition (estimate); sticky, high friction (estimate)."
+    sources: [etb_density, estimate]
