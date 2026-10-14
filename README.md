@@ -39,12 +39,25 @@ Paths come from `src/vsu/settings.py`, which reads `VSU_DATA_ROOT`, `VSU_RESULTS
 `VSU_CACHE_ROOT` and `HF_HOME` with defaults `./data`, `./results/runs`, `./.cache`.
 Copy `.env.example` to `.env` for API keys; `.env` is gitignored.
 
-Running an experiment (from Step 4 on):
+Running an experiment:
 
 ```bash
-uv run python scripts/run.py exp1 --models dummy --variants v1 v2 v3
-uv run python scripts/report.py
+uv run python scripts/run.py exp1 --models dummy --variants v1 v2 v3   # whole pipeline
+uv run python scripts/run.py exp1 --models dummy --stage score         # re-score the latest runs
+uv run python scripts/report.py --experiment exp1                      # tables into results/tables
+uv run python scripts/smoke_model.py --model dummy                     # one image, one question
 ```
+
+Each run writes `VSU_RESULTS_ROOT/<exp>/<model>/<variant>/<timestamp>/` with `config.yaml`
+(resolved settings, git commit, package versions, template hash), `questions.jsonl`,
+`raw.jsonl`, `scored.jsonl` and `summary.json`. A resubmitted job resumes from `raw.jsonl`.
+Experiments are configured in `configs/experiments/`, models in `configs/models/`, prompts are
+jinja templates in `src/vsu/prompts/templates/` named `<exp>_<variant>.jinja`.
+
+Experiment 1 (material recognition) asks the material of the object in the simulated scenes
+(the benchmark) and of the smoke photos (a sanity check, reported apart). Reports under
+`results/tables/` give accuracy, macro F1, per material recall, confusion matrices and the
+agreement between prompt variants.
 
 ## Snellius
 

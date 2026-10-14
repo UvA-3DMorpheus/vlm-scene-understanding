@@ -98,7 +98,8 @@ Eighteen photos from Wikimedia Commons in `smoke/`, two per material for metal, 
 plastic, wood, foam, ceramic, cardboard, book and glass, one each for rubber and plastic. Resized to
 at most 800 px. `labels.csv` has `file,material,object,notes` plus `source_url,author,license`;
 `ATTRIBUTION.md` lists the credits (all CC0, public domain, CC BY or CC BY-SA). Loader:
-`vsu.data.smoke.load_smoke_set`. Used by tests and by Experiment 1 smoke runs.
+`vsu.data.smoke.load_smoke_set`. It is a sanity check only: it shows the pipeline works on real
+photos. The benchmark is the simulated scenes; reports keep the two apart and never mix them.
 
 ## Physion++
 
