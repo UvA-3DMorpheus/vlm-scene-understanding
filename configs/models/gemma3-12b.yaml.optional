@@ -1,0 +1,8 @@
+# Google Gemma 3 12B (vision). Gated: accept the licence on huggingface.co and put HF_TOKEN in the
+# secrets file before download_models.sh. gpu_a100 in bf16 (about 25 GB).
+backend: hf
+hf_id: google/gemma-3-12b-it
+dtype: bfloat16
+decoding: {temperature: 0.0, max_tokens: 1024}
+options: {attn_implementation: sdpa}
+notes: Third model family. Gated repository.

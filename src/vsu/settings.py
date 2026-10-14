@@ -12,6 +12,7 @@ Variables read:
 - ``VSU_RESULTS_ROOT``: run outputs (default ``./results/runs``)
 - ``VSU_CACHE_ROOT``: model response cache (default ``./.cache``)
 - ``HF_HOME``: Hugging Face cache, optional and passed through unchanged
+- ``VSU_CONFIGS_ROOT``: yaml configs (default: the repository's ``configs/``)
 """
 
 from __future__ import annotations
@@ -21,6 +22,9 @@ from pathlib import Path
 
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+#: The repository root when running from a checkout (src/vsu/settings.py -> three levels up).
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
@@ -47,6 +51,9 @@ class Settings(BaseSettings):
         validation_alias="HF_HOME",
         description="Hugging Face cache directory; None means the Hugging Face default.",
     )
+    configs_root: Path = Field(
+        default=REPO_ROOT / "configs", description="Model and experiment yaml configs."
+    )
 
     @field_validator("hf_home", mode="before")
     @classmethod
@@ -54,7 +61,7 @@ class Settings(BaseSettings):
         """Treat an empty ``HF_HOME`` (as left in a copied .env.example) as unset."""
         return None if value in ("", None) else value
 
-    @field_validator("data_root", "results_root", "cache_root", "hf_home")
+    @field_validator("data_root", "results_root", "cache_root", "hf_home", "configs_root")
     @classmethod
     def _absolute(cls, value: Path | None) -> Path | None:
         """Expand ``~`` and make the path absolute so run records are portable.
@@ -91,6 +98,16 @@ class Settings(BaseSettings):
         """Hand boxes and synonym tables."""
         return self.data_root / "annotations"
 
+    @property
+    def model_configs_dir(self) -> Path:
+        """One yaml per model."""
+        return self.configs_root / "models"
+
+    @property
+    def experiment_configs_dir(self) -> Path:
+        """One yaml per experiment."""
+        return self.configs_root / "experiments"
+
     def resolved_roots(self) -> dict[str, str | None]:
         """Return the resolved roots as strings, for inclusion in a run's config record."""
         return {
@@ -98,6 +115,7 @@ class Settings(BaseSettings):
             "VSU_RESULTS_ROOT": str(self.results_root),
             "VSU_CACHE_ROOT": str(self.cache_root),
             "HF_HOME": None if self.hf_home is None else str(self.hf_home),
+            "VSU_CONFIGS_ROOT": str(self.configs_root),
         }
 
 

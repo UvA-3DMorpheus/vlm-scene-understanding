@@ -1,0 +1,9 @@
+# Canned answers, no GPU, no API key. Every test and every pipeline dry run uses this.
+backend: dummy
+decoding:
+  temperature: 0.0
+  max_tokens: 256
+options:
+  # Fraction of responses that are deliberately unparseable, to exercise failure counting.
+  failure_rate: 0.0
+notes: Deterministic per request (seeded by the request content); answers follow the schema asked for.

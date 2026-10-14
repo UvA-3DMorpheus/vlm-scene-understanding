@@ -1,0 +1,12 @@
+# Main open baseline. One gpu_a100 (40 GB) in bf16.
+backend: hf
+hf_id: Qwen/Qwen3-VL-8B-Instruct
+dtype: bfloat16
+decoding:
+  temperature: 0.0
+  max_tokens: 1024
+options:
+  # Qwen processors accept a pixel budget per image; 640x480 frames fit well below this.
+  max_pixels: 1003520
+  attn_implementation: sdpa
+notes: Qwen3-VL family, transformers >= 4.57.

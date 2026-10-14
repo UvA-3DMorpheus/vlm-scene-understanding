@@ -1,0 +1,7 @@
+# LLaVA-OneVision 7B (Qwen2 language model, SigLIP vision); gpu_a100.
+backend: hf
+hf_id: llava-hf/llava-onevision-qwen2-7b-ov-hf
+dtype: bfloat16
+decoding: {temperature: 0.0, max_tokens: 1024}
+options: {attn_implementation: sdpa}
+notes: Fourth model family; native transformers format.

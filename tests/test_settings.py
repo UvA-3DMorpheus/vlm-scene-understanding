@@ -73,7 +73,13 @@ def test_symlinks_are_not_followed(clean_env: pytest.MonkeyPatch, tmp_path: Path
 def test_resolved_roots_are_plain_strings(clean_env: pytest.MonkeyPatch, tmp_path: Path) -> None:
     s = Settings(data_root=tmp_path, _env_file=None)
     record = s.resolved_roots()
-    assert set(record) == {"VSU_DATA_ROOT", "VSU_RESULTS_ROOT", "VSU_CACHE_ROOT", "HF_HOME"}
+    assert set(record) == {
+        "VSU_DATA_ROOT",
+        "VSU_RESULTS_ROOT",
+        "VSU_CACHE_ROOT",
+        "HF_HOME",
+        "VSU_CONFIGS_ROOT",
+    }
     assert record["VSU_DATA_ROOT"] == str(tmp_path)
     assert record["HF_HOME"] is None
     assert all(v is None or isinstance(v, str) for v in record.values())
@@ -93,3 +99,10 @@ def test_environment_beats_dotenv(clean_env: pytest.MonkeyPatch, tmp_path: Path)
     (cwd / ".env").write_text("VSU_CACHE_ROOT=./from_dotenv\n")
     clean_env.setenv("VSU_CACHE_ROOT", str(cwd / "from_env"))
     assert Settings().cache_root == cwd / "from_env"
+
+
+def test_configs_root_defaults_to_the_repository(clean_env: pytest.MonkeyPatch) -> None:
+    s = Settings(_env_file=None)
+    assert s.configs_root.name == "configs" and (s.model_configs_dir / "dummy.yaml").is_file()
+    clean_env.setenv("VSU_CONFIGS_ROOT", "/elsewhere/cfg")
+    assert Settings(_env_file=None).experiment_configs_dir == Path("/elsewhere/cfg/experiments")

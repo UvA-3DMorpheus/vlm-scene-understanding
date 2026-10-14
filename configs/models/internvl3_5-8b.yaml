@@ -1,0 +1,10 @@
+# Second open family, to check that findings are not Qwen specific. One gpu_a100 in bf16.
+backend: hf
+hf_id: OpenGVLab/InternVL3_5-8B-HF
+dtype: bfloat16
+decoding:
+  temperature: 0.0
+  max_tokens: 1024
+options:
+  attn_implementation: sdpa
+notes: Native transformers format (InternVLForConditionalGeneration), no remote code.
