@@ -1,0 +1,8 @@
+model,variant,n,accuracy,first_option_rate,order_consistency,invalid_rate,parse_failures,photo acc,run
+gemma4-31b,choice_v1,144,0.993,0.493,0.986,0.0,0,0.993,20261016T094312Z
+glm-4.6v-flash,choice_v1,144,0.986,0.514,0.972,0.0,0,0.986,20261016T094409Z
+internvl3_5-14b,choice_v1,144,0.951,0.507,0.958,0.0,0,0.951,20261016T094144Z
+internvl3_5-8b,choice_v1,144,0.965,0.507,0.986,0.0,0,0.965,20261016T093833Z
+llava-onevision-7b,choice_v1,144,0.944,0.5,1.0,0.0,0,0.944,20261016T093845Z
+qwen3.8-27b,choice_v1,144,0.979,0.507,0.986,0.0,0,0.979,20261016T095022Z
+qwen3vl-8b,choice_v1,144,0.958,0.514,0.944,0.0,0,0.958,20261016T093836Z

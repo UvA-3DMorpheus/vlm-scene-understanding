@@ -1,0 +1,15 @@
+model,mode,identify acc,yes/no bal. acc,yes rate,two options acc,matching acc,matching solved,yes/no vs 1.0,two options vs 1.0,matching vs 1.0
+gemma4-31b,direct,0.889,0.958,0.211,0.993,1.0,1.0,0.967,1.0,1.0
+gemma4-31b,reasoning,0.889,,,,,,,,
+glm-4.6v-flash,direct,0.833,0.951,0.278,0.986,1.0,1.0,0.9,0.992,1.0
+glm-4.6v-flash,reasoning,0.778,,,,,,,,
+internvl3_5-14b,direct,0.778,0.896,0.256,0.951,0.994,0.975,0.9,0.922,1.0
+internvl3_5-14b,reasoning,0.778,,,,,,,,
+internvl3_5-8b,direct,0.667,0.958,0.267,0.965,0.994,0.975,0.878,1.0,1.0
+internvl3_5-8b,reasoning,0.667,,,,,,,,
+llava-onevision-7b,direct,0.722,0.951,0.278,0.944,0.981,0.95,0.9,1.0,1.0
+llava-onevision-7b,reasoning,0.611,,,,,,,,
+qwen3.8-27b,direct,0.833,0.91,0.178,0.979,0.994,0.975,0.944,0.952,0.993
+qwen3.8-27b,reasoning,0.833,,,,,,,,
+qwen3vl-8b,direct,0.833,0.938,0.244,0.958,0.988,0.95,0.933,0.984,1.0
+qwen3vl-8b,reasoning,0.833,,,,,,,,

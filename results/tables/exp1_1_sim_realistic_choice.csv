@@ -1,0 +1,8 @@
+model,variant,n,accuracy,first_option_rate,order_consistency,invalid_rate,parse_failures,crop acc,run
+gemma4-31b,choice_v1,200,0.92,0.47,0.94,0.0,0,0.92,20261016T094312Z
+glm-4.6v-flash,choice_v1,200,0.97,0.52,0.96,0.0,0,0.97,20261016T094409Z
+internvl3_5-14b,choice_v1,200,0.885,0.545,0.91,0.0,0,0.885,20261016T094144Z
+internvl3_5-8b,choice_v1,200,0.88,0.5,0.98,0.0,0,0.88,20261016T093833Z
+llava-onevision-7b,choice_v1,200,0.92,0.5,1.0,0.0,0,0.92,20261016T093845Z
+qwen3.8-27b,choice_v1,200,0.9,0.48,0.96,0.0,0,0.9,20261016T095022Z
+qwen3vl-8b,choice_v1,200,0.83,0.52,0.96,0.0,0,0.83,20261016T093836Z

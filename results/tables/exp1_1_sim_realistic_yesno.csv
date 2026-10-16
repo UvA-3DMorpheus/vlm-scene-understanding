@@ -1,0 +1,8 @@
+model,variant,n,balanced_accuracy,accuracy,true_positive_rate,true_negative_rate,yes_rate,parse_failures,crop acc,frame acc,run
+gemma4-31b,yesno_v1,250,0.695,0.872,0.4,0.99,0.088,0,0.944,0.8,20261016T094118Z
+glm-4.6v-flash,yesno_v1,250,0.818,0.864,0.74,0.895,0.232,0,0.88,0.848,20261016T094153Z
+internvl3_5-14b,yesno_v1,250,0.757,0.792,0.7,0.815,0.288,0,0.8,0.784,20261016T093814Z
+internvl3_5-8b,yesno_v1,250,0.723,0.76,0.66,0.785,0.304,0,0.728,0.792,20261016T093605Z
+llava-onevision-7b,yesno_v1,250,0.745,0.88,0.52,0.97,0.128,0,0.936,0.824,20261016T093554Z
+qwen3.8-27b,yesno_v1,250,0.72,0.888,0.44,1.0,0.088,0,0.944,0.832,20261016T094805Z
+qwen3vl-8b,yesno_v1,250,0.782,0.856,0.66,0.905,0.208,0,0.84,0.872,20261016T093720Z
