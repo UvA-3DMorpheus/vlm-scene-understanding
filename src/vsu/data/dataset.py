@@ -39,6 +39,7 @@ from vsu.schemas.scene import (
     SceneObject,
 )
 from vsu.settings import Settings, get_settings
+from vsu.utils.io import tmp_path
 
 GROUND_TRUTH_FILE = "ground_truth.json"
 CAMERAS_FILE = "cameras.json"
@@ -238,7 +239,7 @@ class Scene:
         path = self.frames_cache / camera / f"crop_{index:06d}_{obj.id}_m{margin:.2f}.png"
         if not path.is_file():
             path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_suffix(".png.tmp")
+            tmp = tmp_path(path)
             self.crop(camera, index, object_id, margin=margin, min_size=min_size).save(tmp, "PNG")
             tmp.replace(path)
         return path
@@ -281,7 +282,7 @@ class Scene:
         path = self.frames_cache / camera / f"outline_{index:06d}_{obj.id}_t{thickness}.png"
         if not path.is_file():
             path.parent.mkdir(parents=True, exist_ok=True)
-            tmp = path.with_suffix(".png.tmp")
+            tmp = tmp_path(path)
             self.outline(camera, index, object_id, thickness=thickness).save(tmp, "PNG")
             tmp.replace(path)
         return path
@@ -358,6 +359,7 @@ def load_scene(root: Path, *, settings: Settings | None = None) -> Scene:
 def discover_scenes(
     sim_root: Path | None = None,
     *,
+    collection: str | None = None,
     phenomenon: Phenomenon | None = None,
     only_passing: bool = False,
     settings: Settings | None = None,
@@ -367,7 +369,9 @@ def discover_scenes(
     Folders are found recursively, so ``sim/<scene>`` and ``sim/<look>/<scene>`` both work.
     """
     settings = settings or get_settings()
-    sim_root = Path(sim_root) if sim_root is not None else settings.sim_dir
+    if sim_root is None:
+        sim_root = settings.sim_collection_dir(collection) if collection else settings.sim_dir
+    sim_root = Path(sim_root)
     if not sim_root.is_dir():
         return []
     scenes = [

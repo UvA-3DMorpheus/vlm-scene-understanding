@@ -27,7 +27,8 @@ def env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     data = tmp_path / "data"
     shutil.copytree(REPO / "data" / "smoke", data / "smoke")
     shutil.copytree(REPO / "data" / "materials", data / "materials")
-    make_scene_dir(data / "sim", "sliding_cereal_box")
+    make_scene_dir(data / "sim" / "preview", "sliding_cereal_box")
+    make_scene_dir(data / "sim" / "realistic", "sliding_cereal_box")
     monkeypatch.setenv("VSU_DATA_ROOT", str(data))
     monkeypatch.setenv("VSU_RESULTS_ROOT", str(tmp_path / "runs"))
     monkeypatch.setenv("VSU_CACHE_ROOT", str(tmp_path / "cache"))
@@ -50,36 +51,36 @@ def test_run_then_report(env: Path, capsys: pytest.CaptureFixture[str]) -> None:
             "summary.json",
         }
     out = capsys.readouterr().out
-    assert "sim (benchmark):" in out and "smoke (sanity check):" in out
-    assert out.count("| dummy |") == 6
+    assert "sim_preview (comparison):" in out and "smoke (sanity check):" in out
+    assert out.count("| dummy |") == 9  # three datasets x three variants
 
     report = load_script("report")
     tables = env / "tables"
     assert report.main(["--experiment", "exp1", "--out", str(tables)]) == 0
     names = {p.name for p in tables.iterdir()}
     assert names >= {
-        "exp1_sim_accuracy.csv",
-        "exp1_sim_agreement.csv",
-        "exp1_sim_per_material.csv",
+        "exp1_sim_preview_accuracy.csv",
+        "exp1_sim_preview_agreement.csv",
+        "exp1_sim_preview_per_material.csv",
         "exp1_smoke_accuracy.csv",
         "exp1_runs.csv",
         "exp1_report.md",
     }
-    with (tables / "exp1_sim_accuracy.csv").open() as f:
+    with (tables / "exp1_sim_preview_accuracy.csv").open() as f:
         rows = list(csv.DictReader(f))
     assert [r["variant"] for r in rows] == ["v1", "v2", "v3"] and all(r["n"] == "7" for r in rows)
     assert set(rows[0]) >= {"frame acc", "crop acc", "frame macro_f1"}
     with (tables / "exp1_smoke_accuracy.csv").open() as f:
         smoke_rows = list(csv.DictReader(f))
     assert all(r["n"] == "18" for r in smoke_rows)
-    with (tables / "exp1_sim_agreement.csv").open() as f:
+    with (tables / "exp1_sim_preview_agreement.csv").open() as f:
         (agree,) = list(csv.DictReader(f))
     assert (
         agree["model"] == "dummy" and agree["n_common"] == "7" and agree["variants"] == "v1,v2,v3"
     )
     text = (tables / "exp1_report.md").read_text()
-    assert text.index("## sim (benchmark)") < text.index("## smoke (sanity check)")
-    assert "dummy/v1/frame" in text and "never mixed" in text
+    assert text.index("## sim_preview (comparison)") < text.index("## smoke (sanity check)")
+    assert "dummy/v1/frame" in text and "No number mixes datasets" in text
 
 
 def test_score_and_report_stages_reuse_latest_run(env: Path) -> None:
@@ -112,3 +113,59 @@ def test_report_with_no_runs(env: Path, capsys: pytest.CaptureFixture[str]) -> N
     report = load_script("report")
     assert report.main(["--out", str(env / "tables")]) == 0
     assert "no finished runs" in capsys.readouterr().out
+
+
+def test_exp1_1_run_then_report(env: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    run = load_script("run")
+    assert run.main(["exp1_1", "--models", "dummy"]) == 0
+    assert sorted(p.name for p in (env / "runs" / "exp1_1" / "dummy").iterdir()) == [
+        "choice_v1",
+        "choice_v2",
+        "yesno_v1",
+        "yesno_v2",
+    ]
+    assert "balanced_accuracy" in capsys.readouterr().out
+    report = load_script("report")
+    tables = env / "tables"
+    assert report.main(["--experiment", "exp1_1", "--out", str(tables)]) == 0
+    names = {p.name for p in tables.iterdir()}
+    assert {
+        "exp1_1_sim_realistic_yesno.csv",
+        "exp1_1_sim_realistic_choice.csv",
+        "exp1_1_report.md",
+    } <= names
+    text = (tables / "exp1_1_report.md").read_text()
+    assert text.index("## sim_realistic") < text.index("## smoke") and "### Two options" in text
+
+
+def test_exp1_2_run_then_report(env: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    run = load_script("run")
+    assert run.main(["exp1_2", "--models", "dummy"]) == 0
+    assert "solved_rate" in capsys.readouterr().out
+    report = load_script("report")
+    tables = env / "tables"
+    assert report.main(["--experiment", "exp1_2", "--out", str(tables)]) == 0
+    assert (tables / "exp1_2_smoke_pairs.csv").is_file() and (tables / "exp1_2_report.md").is_file()
+
+
+def test_material_overview_joins_the_three_experiments(env: Path) -> None:
+    import csv
+
+    run = load_script("run")
+    for exp in ("exp1", "exp1_1", "exp1_2"):
+        assert run.main([exp, "--models", "dummy"]) == 0
+    report = load_script("report")
+    tables = env / "tables"
+    assert report.main(["--experiment", "material", "--out", str(tables)]) == 0
+    with (tables / "material_sim_realistic_overview.csv").open() as f:
+        rows = list(csv.DictReader(f))
+    assert [(r["model"], r["mode"]) for r in rows] == [("dummy", "direct"), ("dummy", "reasoning")]
+    for r in rows:
+        for column in ("identify acc", "yes/no bal. acc", "two options acc"):
+            assert r[column] != "", column
+        assert r["yes/no vs 1.0"] != "" and r["two options vs 1.0"] != ""
+        assert r["matching acc"] == ""  # one labelled scene here: no pair to match
+    with (tables / "material_smoke_overview.csv").open() as f:
+        smoke = list(csv.DictReader(f))
+    assert all(r["matching acc"] != "" and r["matching vs 1.0"] != "" for r in smoke)
+    assert "## smoke (sanity check)" in (tables / "material_report.md").read_text()

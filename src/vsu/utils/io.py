@@ -3,12 +3,23 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import yaml
+
+
+def tmp_path(path: Path) -> Path:
+    """A temporary sibling of ``path``, unique per process, for write-then-rename.
+
+    Several jobs may write the same cached file at once; each writes its own temporary file
+    and renames it into place, so none can remove or truncate another's.
+    """
+    path = Path(path)
+    return path.with_name(f".{path.name}.{os.getpid()}.tmp")
 
 
 def utc_timestamp() -> str:
@@ -41,7 +52,7 @@ def write_jsonl(path: Path, records: Iterable[dict[str, Any]]) -> None:
     """Write all records, replacing the file."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = tmp_path(path)
     with tmp.open("w") as f:
         for record in records:
             f.write(json.dumps(record, sort_keys=True) + "\n")
@@ -55,7 +66,7 @@ def read_json(path: Path) -> Any:
 def write_json(path: Path, data: Any) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = tmp_path(path)
     tmp.write_text(json.dumps(data, indent=1, sort_keys=True, default=str) + "\n")
     tmp.replace(path)
 

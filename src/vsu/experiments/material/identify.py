@@ -1,13 +1,9 @@
-"""Experiment 1: material recognition from a first frame or a photo.
+"""Experiment 1.0: material identification from a single image.
 
-Questions come from the smoke photos and from simulated scenes whose object carries a
-material class. Each simulated scene yields one question per camera and input condition:
-``frame`` shows the whole first frame, ``crop`` shows the object cut out along its
-segmentation mask, ``outline`` shows the whole frame with the object's mask boundary
-drawn in red. With ``sim_multiview`` on, one more question per scene shows the first
-frame of every camera at once (condition ``multiview``, camera ``all``). The label set
-offered in closed set prompts is the dataset's own: the material table keys for photos,
-the five materials.json classes for simulated scenes.
+The model sees one view of an object and names its material from the dataset's closed set
+(or in free words, for the open set variant). Objects and views come from
+:mod:`vsu.experiments.material.items`, shared with Experiments 1.1 and 1.2, so all three ask
+about the same images.
 
 Variants (templates ``exp1_<variant>.jinja``): ``v1`` closed set, one label; ``v2`` open
 set free text, mapped onto the label set through the material table aliases; ``v3``
@@ -21,31 +17,17 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from vsu.data.dataset import Scene, discover_scenes
 from vsu.data.materials import MaterialTable, load_material_table
-from vsu.data.smoke import load_smoke_set
 from vsu.experiments.base import Experiment, Question, ScoredRecord
+from vsu.experiments.material.items import FOCUS, MaterialItem, dataset_roles, load_items
 from vsu.schemas.answers import MaterialAnswer
-from vsu.schemas.scene import MATERIAL_CLASSES
 from vsu.scoring.classification import classification_summary, label_counts
 
 log = logging.getLogger(__name__)
 
-FOCUS = {
-    "photo": "the main object in this photo",
-    "frame": "the main movable object in this image (not the surface it rests on)",
-    "crop": "the object shown in this close crop",
-    "outline": "the object outlined in red in this image",
-    "multiview": (
-        "the main movable object (not the surface it rests on), shown from five different "
-        "cameras in these images"
-    ),
-}
-MULTIVIEW_CAMERA = "all"
-
 
 class MaterialExperiment(Experiment):
-    """Experiment 1. See the module docstring."""
+    """Experiment 1.0. See the module docstring."""
 
     name = "exp1"
     answer_schema = MaterialAnswer
@@ -66,120 +48,16 @@ class MaterialExperiment(Experiment):
 
     # ---- questions
 
+    def items(self) -> list[MaterialItem]:
+        return load_items(self.config.options, self.settings, self.table)
+
     def build_questions(self) -> list[Question]:
-        opts = self.config.options
-        questions: list[Question] = []
-        datasets = opts.get("datasets", ["smoke", "sim"])
-        if "smoke" in datasets:
-            questions += self._smoke_questions()
-        if "sim" in datasets:
-            questions += self._sim_questions()
+        """One question per item and view."""
+        questions = [question_for_view(item, view) for item in self.items() for view in item.views]
         log.info(
             "exp1: %d questions (%s)", len(questions), label_counts(q.dataset for q in questions)
         )
         return questions
-
-    def _smoke_questions(self) -> list[Question]:
-        labels = self.table.keys
-        out = []
-        try:
-            images = load_smoke_set(settings=self.settings)
-        except FileNotFoundError as exc:
-            log.warning("smoke set skipped: %s", exc)
-            return out
-        for img in images:
-            out.append(
-                Question(
-                    id=f"smoke/{img.image_id}/photo",
-                    dataset="smoke",
-                    item_id=img.image_id,
-                    condition="photo",
-                    images=[str(img.path)],
-                    context={"labels": labels, "focus": FOCUS["photo"]},
-                    target={"material": img.material},
-                    meta={"labels": labels, "object": img.object, "license": img.license},
-                )
-            )
-        return out
-
-    def _sim_questions(self) -> list[Question]:
-        opts = self.config.options
-        cameras = list(opts.get("sim_cameras", ["front"]))
-        conditions = list(opts.get("sim_conditions", ["frame", "crop"]))
-        index = int(opts.get("frame_index", 0))
-        margin = float(opts.get("crop_margin", 0.2))
-        labels = list(MATERIAL_CLASSES)
-        out = []
-        scenes = discover_scenes(
-            only_passing=bool(opts.get("only_passing_scenes", False)), settings=self.settings
-        )
-        multiview = bool(opts.get("sim_multiview", False))
-        for scene in scenes:
-            material = scene.gt.obj.material_class
-            if material is None:
-                continue
-            if multiview:
-                present = [c for c in cameras if c in scene.cameras]
-                if len(present) >= 2:
-                    out.append(
-                        self._sim_question(
-                            scene,
-                            MULTIVIEW_CAMERA,
-                            "multiview",
-                            [str(scene.frame_path(c, index)) for c in present],
-                            labels,
-                            material,
-                        )
-                    )
-            for camera in cameras:
-                if camera not in scene.cameras:
-                    log.warning("%s has no camera %s", scene.scene_id, camera)
-                    continue
-                for condition in conditions:
-                    image = self._sim_image(scene, camera, index, condition, margin)
-                    out.append(
-                        self._sim_question(scene, camera, condition, [str(image)], labels, material)
-                    )
-        return out
-
-    @staticmethod
-    def _sim_question(
-        scene: Scene,
-        camera: str,
-        condition: str,
-        images: list[str],
-        labels: list[str],
-        material: str,
-    ) -> Question:
-        provenance = scene.gt.provenance
-        return Question(
-            id=f"sim/{scene.scene_id}/{camera}/{condition}",
-            dataset="sim",
-            item_id=scene.scene_id,
-            condition=condition,
-            images=images,
-            context={"labels": labels, "focus": FOCUS[condition]},
-            target={"material": material},
-            meta={
-                "labels": labels,
-                "camera": camera,
-                "object": scene.gt.obj.name,
-                "object_key": scene.gt.obj.key,
-                "phenomenon": scene.phenomenon,
-                "look": provenance.look if provenance else None,
-                "renderer": provenance.renderer if provenance else None,
-            },
-        )
-
-    @staticmethod
-    def _sim_image(scene: Scene, camera: str, index: int, condition: str, margin: float):  # noqa: ANN205
-        if condition == "frame":
-            return scene.frame_path(camera, index)
-        if condition == "crop":
-            return scene.crop_path(camera, index, margin=margin)
-        if condition == "outline":
-            return scene.outline_path(camera, index)
-        raise ValueError(f"unknown sim condition {condition!r}")
 
     # ---- scoring
 
@@ -220,23 +98,16 @@ class MaterialExperiment(Experiment):
     def summarize(self, scored: list[ScoredRecord], variant: str) -> dict[str, Any]:
         """Classification metrics per dataset and condition, kept apart by dataset role.
 
-        ``datasets`` holds one entry per dataset with its role (``primary`` for the
-        simulated scenes, ``sanity`` for the smoke photos), its accuracy over all its
-        conditions and the mean macro F1 over its conditions. ``groups`` holds the full
-        classification summary per ``<dataset>/<condition>``. There is no number that
-        mixes datasets.
+        ``datasets`` holds one entry per dataset with its role (``primary``: the benchmark;
+        ``secondary``: reported beside it; ``sanity``: reported apart), its accuracy over
+        all its conditions and the mean macro F1 over its conditions. ``groups`` holds the
+        full classification summary per ``<dataset>/<condition>``. No number mixes datasets.
         """
-        primary = self.config.options.get("primary_dataset", "sim")
-        sanity = list(self.config.options.get("sanity_datasets", ["smoke"]))
+        roles = dataset_roles(self.config.options)
         groups: dict[str, list[ScoredRecord]] = {}
         for s in scored:
             groups.setdefault(f"{s.dataset}/{s.condition}", []).append(s)
-        out: dict[str, Any] = {
-            "primary_dataset": primary,
-            "sanity_datasets": sanity,
-            "groups": {},
-            "datasets": {},
-        }
+        out: dict[str, Any] = {"dataset_roles": roles, "groups": {}, "datasets": {}}
         for name, records in sorted(groups.items()):
             labels = _labels_of(records)
             y_true = [r.target["material"] for r in records]
@@ -252,9 +123,7 @@ class MaterialExperiment(Experiment):
             ]
             exact = sum(bool(r.parse_ok and r.derived.get("exact")) for r in records)
             out["datasets"][dataset] = {
-                "role": "primary"
-                if dataset == primary
-                else ("sanity" if dataset in sanity else "other"),
+                "role": roles.get(dataset, "other"),
                 "n": len(records),
                 "n_parse_failures": sum(not r.parse_ok for r in records),
                 "accuracy": (correct / len(records)) if records else None,
@@ -263,6 +132,21 @@ class MaterialExperiment(Experiment):
                 "by_camera": _accuracy_by(records, "camera"),
             }
         return out
+
+
+def question_for_view(item: MaterialItem, view: Any) -> Question:
+    """The identification question for one object in one view."""
+    labels = list(item.labels)
+    return Question(
+        id=item.view_id(view),
+        dataset=item.dataset,
+        item_id=item.item_id,
+        condition=view.condition,
+        images=list(view.images),
+        context={"labels": labels, "focus": FOCUS[view.condition]},
+        target={"material": item.material},
+        meta={"labels": labels, **({"camera": view.camera} if view.camera else {}), **item.meta},
+    )
 
 
 def _accuracy_by(records: list[ScoredRecord], key: str) -> dict[str, dict[str, Any]]:

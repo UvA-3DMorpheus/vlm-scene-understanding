@@ -9,7 +9,7 @@ import pytest
 
 from tests.test_dataset import make_scene_dir
 from vsu.experiments.base import ExperimentConfig, Question, load_experiment_config
-from vsu.experiments.exp1_material import MaterialExperiment
+from vsu.experiments.material.identify import MaterialExperiment
 from vsu.models.dummy_backend import DummyModel
 from vsu.models.registry import ModelConfig
 from vsu.prompts import loader
@@ -25,7 +25,9 @@ def settings(tmp_path: Path) -> Settings:
     data = tmp_path / "data"
     shutil.copytree(REPO / "data" / "smoke", data / "smoke")
     shutil.copytree(REPO / "data" / "materials", data / "materials")
-    make_scene_dir(data / "sim", "sliding_cereal_box")  # material cardboard, cameras front + high
+    make_scene_dir(
+        data / "sim" / "preview", "sliding_cereal_box"
+    )  # material cardboard, cameras front + high
     return Settings(
         data_root=data,
         results_root=tmp_path / "runs",
@@ -56,20 +58,20 @@ def test_templates_exist_for_every_configured_variant(exp: MaterialExperiment) -
 def test_questions_cover_smoke_and_labelled_sim_scenes(exp: MaterialExperiment) -> None:
     questions = exp.build_questions()
     smoke = [q for q in questions if q.dataset == "smoke"]
-    sim = [q for q in questions if q.dataset == "sim"]
+    sim = [q for q in questions if q.dataset == "sim_preview"]
     assert len(smoke) == 18 and all(q.condition == "photo" for q in smoke)
     assert (
         smoke[0].context["labels"] == exp.table.keys and smoke[0].meta["labels"] == exp.table.keys
     )
     assert all(Path(q.images[0]).is_file() for q in questions)
     assert sorted(q.id for q in sim) == [
-        "sim/sliding_cereal_box/all/multiview",
-        "sim/sliding_cereal_box/front/crop",
-        "sim/sliding_cereal_box/front/frame",
-        "sim/sliding_cereal_box/front/outline",
-        "sim/sliding_cereal_box/high/crop",
-        "sim/sliding_cereal_box/high/frame",
-        "sim/sliding_cereal_box/high/outline",
+        "sim_preview/sliding_cereal_box/all/multiview",
+        "sim_preview/sliding_cereal_box/front/crop",
+        "sim_preview/sliding_cereal_box/front/frame",
+        "sim_preview/sliding_cereal_box/front/outline",
+        "sim_preview/sliding_cereal_box/high/crop",
+        "sim_preview/sliding_cereal_box/high/frame",
+        "sim_preview/sliding_cereal_box/high/outline",
     ]
     multi = next(q for q in sim if q.condition == "multiview")
     assert len(multi.images) == 2 and multi.meta["camera"] == "all"
@@ -90,14 +92,14 @@ def test_questions_cover_smoke_and_labelled_sim_scenes(exp: MaterialExperiment) 
 def test_unlabelled_scenes_and_missing_cameras_are_skipped(settings: Settings) -> None:
     import json
 
-    d = settings.sim_dir / "sliding_cereal_box"
+    d = settings.sim_dir / "preview" / "sliding_cereal_box"
     gt = json.loads((d / "ground_truth.json").read_text())
     gt["object"]["material_class"] = None
     (d / "ground_truth.json").write_text(json.dumps(gt))
     cfg = ExperimentConfig(
         name="exp1",
         variants=["v1"],
-        options={"datasets": ["sim"], "sim_cameras": ["front", "left"]},
+        options={"datasets": ["sim_preview"], "sim_cameras": ["front", "left"]},
     )
     assert MaterialExperiment(cfg, settings=settings).build_questions() == []
 
@@ -114,7 +116,7 @@ def test_score_record_maps_open_set_answers(exp: MaterialExperiment) -> None:
     )
     sim_q = Question(
         id="m",
-        dataset="sim",
+        dataset="sim_preview",
         item_id="m",
         images=["a"],
         context={"labels": list(MATERIAL_CLASSES)},
@@ -155,26 +157,29 @@ def test_dummy_pipeline_end_to_end(exp: MaterialExperiment, variant: str) -> Non
     summary = exp.report(run, variant)
     assert set(summary["groups"]) == {
         "smoke/photo",
-        "sim/crop",
-        "sim/frame",
-        "sim/outline",
-        "sim/multiview",
+        "sim_preview/crop",
+        "sim_preview/frame",
+        "sim_preview/outline",
+        "sim_preview/multiview",
     }
-    sim = summary["groups"]["sim/frame"]
+    sim = summary["groups"]["sim_preview/frame"]
     assert sim["n"] == 2 and sim["confusion"]["labels"] == list(MATERIAL_CLASSES)
-    assert set(summary["datasets"]["sim"]["by_camera"]) == {"front", "high", "all"}
-    assert summary["datasets"]["sim"]["by_camera"]["front"]["n"] == 3
+    assert set(summary["datasets"]["sim_preview"]["by_camera"]) == {"front", "high", "all"}
+    assert summary["datasets"]["sim_preview"]["by_camera"]["front"]["n"] == 3
     assert summary["datasets"]["smoke"]["by_camera"] == {}
     smoke = summary["groups"]["smoke/photo"]
     assert smoke["n"] == 18 and set(smoke["per_class"]) >= {"metal", "wood", "glass"}
-    assert summary["primary_dataset"] == "sim" and summary["sanity_datasets"] == ["smoke"]
-    assert summary["datasets"]["sim"]["role"] == "primary" and summary["datasets"]["sim"]["n"] == 7
+    assert summary["dataset_roles"]["sim_realistic"] == "primary"
+    assert (
+        summary["datasets"]["sim_preview"]["role"] == "secondary"
+        and summary["datasets"]["sim_preview"]["n"] == 7
+    )
     assert (
         summary["datasets"]["smoke"]["role"] == "sanity" and summary["datasets"]["smoke"]["n"] == 18
     )
     assert 0.0 <= summary["datasets"]["smoke"]["accuracy"] <= 1.0
     assert (
-        summary["datasets"]["sim"]["exact_label_rate"] == 1.0
+        summary["datasets"]["sim_preview"]["exact_label_rate"] == 1.0
     )  # the dummy always uses a listed label
     assert "overall" not in summary
     assert summary["num_parse_failures"] == 0

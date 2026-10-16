@@ -160,7 +160,7 @@ materials:
 
   book_paper_cover:
     label: book with a paper cover (bound paper block)
-    aliases: [book, paperback, paperback_book, bound_paper, magazine, notebook]
+    aliases: [book, book_paper, paperback, paperback_book, bound_paper, magazine, notebook]
     density_kg_m3: [700, 1000]
     restitution: [0.1, 0.3]
     friction_static_on_wood: [0.45, 0.65]

@@ -24,12 +24,8 @@ import sys
 
 from vsu.experiments import get_experiment, load_experiment_config
 from vsu.experiments.base import Experiment, RunDir
-from vsu.experiments.reporting import (
-    exp1_accuracy_rows,
-    exp1_dataset_roles,
-    finished_runs,
-    markdown_table,
-)
+from vsu.experiments.material.tables import exp1_1_rows, exp1_2_rows, exp1_accuracy_rows
+from vsu.experiments.reporting import ROLE_TITLES, dataset_sections, finished_runs, markdown_table
 from vsu.models.registry import build_model, load_model_config
 from vsu.settings import get_settings
 from vsu.utils.logging import setup_logging
@@ -56,6 +52,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-cache", action="store_true", help="Bypass the response cache.")
     parser.add_argument(
         "--no-resume", action="store_true", help="Always start a new run directory."
+    )
+    parser.add_argument(
+        "--cache-only",
+        action="store_true",
+        help="Answer only from the response cache; stop at the first miss (never loads a model).",
     )
     parser.add_argument("--limit", type=int, default=None, help="Only the first N questions.")
     parser.add_argument("--log-level", default="INFO")
@@ -89,6 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         model = None
         if args.stage in ("all", "run"):
             model = build_model(model_config, settings=settings, use_cache=not args.no_cache)
+            model.cache_only = args.cache_only
         try:
             for variant in variants:
                 if args.stage in ("all", "questions", "run"):
@@ -96,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
                     run = exp.start_run(
                         model_config,
                         variant,
-                        questions,
+                        exp.questions_for(variant, questions),
                         use_cache=not args.no_cache,
                         resume=not args.no_resume,
                     )
@@ -118,13 +120,21 @@ def main(argv: list[str] | None = None) -> int:
             if model is not None:
                 model.close()
 
-    if args.stage != "questions" and exp.name == "exp1":
+    if args.stage != "questions" and exp.name in ("exp1", "exp1_1", "exp1_2"):
         runs = finished_runs(exp.name, settings=settings)
-        primary, sanity = exp1_dataset_roles(runs)
-        for dataset, title in [(primary, "benchmark"), *[(d, "sanity check") for d in sanity]]:
-            rows = [r for r in exp1_accuracy_rows(runs, dataset) if r["model"] in models]
-            if rows:
-                sys.stdout.write(f"\n{dataset} ({title}):\n" + markdown_table(rows))
+        tasks = ("yesno", "choice") if exp.name == "exp1_1" else (None,)
+        for dataset, role in dataset_sections(runs):
+            for task in tasks:
+                if exp.name == "exp1_1":
+                    rows = exp1_1_rows(runs, dataset, task)
+                elif exp.name == "exp1_2":
+                    rows = exp1_2_rows(runs, dataset)
+                else:
+                    rows = exp1_accuracy_rows(runs, dataset)
+                rows = [r for r in rows if r["model"] in models]
+                if rows:
+                    label = f"{dataset} ({ROLE_TITLES[role]})" + (f", {task}" if task else "")
+                    sys.stdout.write(f"\n{label}:\n" + markdown_table(rows))
     return 0
 
 

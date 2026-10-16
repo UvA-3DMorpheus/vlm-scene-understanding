@@ -227,3 +227,15 @@ def test_response_rejects_unknown_fields() -> None:
             request_hash="h",
             bogus=1,
         )
+
+
+def test_cache_only_serves_hits_and_raises_on_miss(tmp_path: Path, png: Path) -> None:
+    from vsu.models import CacheMiss
+
+    model = FakeVLM("fake", cache=ResponseCache(tmp_path))
+    model.generate([png], "seen")
+    model.cache_only = True
+    assert model.generate([png], "seen").cached
+    with pytest.raises(CacheMiss):
+        model.generate([png], "never asked")
+    assert len(model.calls) == 1

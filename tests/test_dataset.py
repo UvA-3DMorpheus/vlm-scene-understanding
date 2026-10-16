@@ -379,12 +379,12 @@ def test_extract_frames_overwrite_and_missing_video(tmp_path: Path, scene: Scene
 
 def test_interrupted_extraction_is_not_reused(tmp_path: Path, scene: Scene) -> None:
     out = tmp_path / "cache"
-    partial = tmp_path / "cache.partial"
+    partial = tmp_path / "cache.partial.12345"
     partial.mkdir()
-    (partial / "000000.png").write_bytes(b"garbage")  # leftover from a killed run
+    (partial / "000000.png").write_bytes(b"garbage")  # leftover of a killed process
     frames = extract_frames(scene.video("front"), out)
-    assert len(frames) == F and not partial.exists()
-    assert frames[0].stat().st_size > 100
+    assert len(frames) == F and frames[0].stat().st_size > 100
+    assert frames[0].parent == out
 
 
 def test_outline_paints_the_mask_boundary_inside_the_object(scene: Scene) -> None:

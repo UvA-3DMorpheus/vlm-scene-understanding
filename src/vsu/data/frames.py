@@ -37,7 +37,7 @@ def extract_frames(video: Path, out_dir: Path, *, overwrite: bool = False) -> li
 
     Existing frames are reused unless ``overwrite`` is set, so repeated scene loads cost
     nothing. Frame numbering starts at 0 to match ``frames[k].t = k / fps``. ffmpeg writes
-    into a ``.partial`` folder that is renamed when it finishes, so an interrupted
+    into a per-process ``.partial.<pid>`` folder that is renamed when it finishes, so an interrupted
     extraction is never mistaken for a complete one.
     """
     video = Path(video)
@@ -47,7 +47,7 @@ def extract_frames(video: Path, out_dir: Path, *, overwrite: bool = False) -> li
     existing = sorted(out_dir.glob(FRAME_GLOB))
     if existing and not overwrite:
         return existing
-    partial = out_dir.with_name(out_dir.name + ".partial")
+    partial = out_dir.with_name(f"{out_dir.name}.partial.{os.getpid()}")  # one per process
     if partial.exists():
         shutil.rmtree(partial)
     partial.mkdir(parents=True)
@@ -66,9 +66,13 @@ def extract_frames(video: Path, out_dir: Path, *, overwrite: bool = False) -> li
     if not any(partial.glob(FRAME_GLOB)):
         shutil.rmtree(partial)
         raise RuntimeError(f"ffmpeg produced no frames from {video}")
-    if out_dir.exists():
+    if overwrite and out_dir.exists():
         shutil.rmtree(out_dir)
-    os.replace(partial, out_dir)
+    try:
+        os.replace(partial, out_dir)
+    except OSError:
+        # another process finished the same extraction first: keep its frames, drop ours
+        shutil.rmtree(partial, ignore_errors=True)
     return sorted(out_dir.glob(FRAME_GLOB))
 
 

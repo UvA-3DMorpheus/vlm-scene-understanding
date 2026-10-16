@@ -1,16 +1,15 @@
-# Experiment 1: material recognition from a single image.
-# Questions: every smoke set photo, and every simulated scene whose object has a material class,
-# from each listed camera, in each input condition (whole first frame, or the object crop cut
-# from the segmentation mask). Three prompt variants: closed set, open set, closed set with reasoning.
+# Experiment 1.0: material identification from a single image.
+# Questions: every labelled object (smoke photos, simulated scenes with a material class) in every
+# view (camera x input condition). Three prompt variants: closed set, open set, closed set with reasoning.
 variants: [v1, v2, v3]
 models: [dummy]
 seed: 0
 options:
-  # Roles: the primary dataset is what we report; sanity datasets only show the pipeline works
-  # on real images and are reported separately, never mixed into the headline numbers.
-  primary_dataset: sim
-  sanity_datasets: [smoke]
-  datasets: [smoke, sim]
+  # Roles: the primary dataset is the benchmark and the only headline; secondary datasets are
+  # reported beside it for comparison; sanity datasets only show the pipeline works on real images.
+  # No reported number mixes datasets.
+  datasets: [sim_realistic, sim_preview, smoke]
+  dataset_roles: {sim_realistic: primary, sim_preview: secondary, smoke: sanity}
   # front is the Morpheus style level view; the other four see motion toward or away from the camera.
   sim_cameras: [front, left, right, high, low]
   # frame: whole first frame; crop: object cut along its mask; outline: whole frame with the

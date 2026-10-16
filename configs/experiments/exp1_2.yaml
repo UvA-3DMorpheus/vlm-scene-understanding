@@ -1,0 +1,26 @@
+# Experiment 1.2: material matching between two objects.
+# Two objects of different materials, seen from the same camera, are shown together:
+# "One is made of <X> and the other of <Y>. Which one is made of <X>, A or B?"
+# Every pair is asked in four forms (both image orders x both asked materials) and in two
+# presentations: two separate images, or one side-by-side image labelled A and B.
+# Variants: v1 answer only, v2 a short comparison of visual cues before the answer.
+variants: [v1, v2]
+models: [dummy]
+seed: 0
+options:
+  # The preview renders are left out of 1.1 and 1.2 to save GPU budget; add sim_preview to compare.
+  datasets: [sim_realistic, smoke]
+  dataset_roles: {sim_realistic: primary, sim_preview: secondary, smoke: sanity}
+  sim_cameras: [front, left, right, high, low]
+  # The object crops are compared; photos use their single photo view.
+  sim_conditions: [crop]
+  sim_multiview: false
+  frame_index: 0
+  crop_margin: 0.2
+  only_passing_scenes: false
+  presentations: [separate, sidebyside]
+  # Photos give 150 different-material pairs; a seeded sample keeps the sanity check small.
+  # Simulated scenes use every pair (9 with the five labelled objects).
+  max_pairs: {smoke: 20}
+notes: >
+  Objects and images are the ones of Experiments 1.0 and 1.1 (vsu.experiments.material_items).

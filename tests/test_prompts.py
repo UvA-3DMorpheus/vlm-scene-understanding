@@ -54,3 +54,9 @@ def test_hash_changes_with_the_file(templates: Path) -> None:
 
 def test_real_templates_dir_exists() -> None:
     assert loader.TEMPLATES_DIR.is_dir()
+
+
+def test_longer_experiment_names_do_not_leak_into_variants(templates: Path) -> None:
+    (templates / "expx_1_yesno_v1.jinja").write_text("x")
+    assert loader.list_variants("expx", templates) == ["v1", "v2"]
+    assert loader.list_variants("expx_1", templates) == ["yesno_v1"]

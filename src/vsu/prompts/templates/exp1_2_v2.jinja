@@ -1,0 +1,11 @@
+{% if presentation == "separate" %}The first image shows object A and the second image shows object B.{% else %}The image shows two objects side by side: object A on the left and object B on the right.{% endif %}
+
+One of the two objects is made of {{ asked }} and the other is made of {{ other }}.
+
+Which object is made of {{ asked }}, A or B?
+
+First, in two or three sentences, compare the visual cues of the two objects that reveal what they are made of: surface finish, texture, reflections, edges and printed text.
+
+Finish with a JSON object on its own line:
+
+{"choice": "<A or B>", "confidence": <number between 0 and 1>, "reasoning": "<one sentence>"}

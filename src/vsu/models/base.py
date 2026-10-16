@@ -111,6 +111,10 @@ def _encode_png(im: Image.Image) -> ImageData:
     return ImageData(buf.getvalue(), "image/png")
 
 
+class CacheMiss(RuntimeError):
+    """Raised in cache-only mode when a request has no cached response."""
+
+
 class TransientError(RuntimeError):
     """A backend failure worth retrying: rate limit, timeout, temporary server error."""
 
@@ -138,6 +142,9 @@ class VLM(ABC):
         self.cache = cache
         self.max_retries = max_retries
         self.retry_wait_s = retry_wait_s
+        #: When true, a request without a cached response raises ``CacheMiss`` instead of
+        #: calling the backend, so a rescoring or regression run can never load a model.
+        self.cache_only = False
 
     @property
     @abstractmethod
@@ -191,6 +198,8 @@ class VLM(ABC):
             if hit is not None:
                 log.info("%s cached %s", self.model_id, key[:12])
                 return hit
+        if self.cache_only:
+            raise CacheMiss(f"{self.model_id}: no cached response for {key[:12]}")
         text, usage, finish_reason, extra = self._call_with_retries(
             image_data, prompt, schema, params
         )

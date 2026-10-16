@@ -75,8 +75,12 @@ class Settings(BaseSettings):
 
     @property
     def sim_dir(self) -> Path:
-        """Simulation team output, converted by ``vsu.data.dataset``."""
+        """Simulation team output, one folder per look: ``sim/preview``, ``sim/realistic``."""
         return self.data_root / "sim"
+
+    def sim_collection_dir(self, collection: str) -> Path:
+        """Scenes rendered with one look (``preview`` = MuJoCo, ``realistic`` = Blender)."""
+        return self.sim_dir / collection
 
     @property
     def physion_pp_dir(self) -> Path:

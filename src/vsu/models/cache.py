@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from vsu.utils.io import tmp_path
+
 if TYPE_CHECKING:
     from vsu.models.base import Response
 
@@ -67,7 +69,7 @@ class ResponseCache:
         """Write a response atomically (temp file then rename)."""
         path = self.path(key)
         path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = path.with_suffix(".json.tmp")
+        tmp = tmp_path(path)
         tmp.write_text(json.dumps(response.model_dump(mode="json"), indent=1, sort_keys=True))
         tmp.replace(path)
         return path

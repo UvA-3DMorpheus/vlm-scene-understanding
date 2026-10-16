@@ -39,7 +39,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 from tqdm import tqdm
 
-from vsu.models.base import VLM, Response
+from vsu.models.base import VLM, CacheMiss, Response
 from vsu.models.registry import ModelConfig
 from vsu.prompts import loader as prompts
 from vsu.settings import Settings, get_settings
@@ -405,13 +405,16 @@ class Experiment(ABC):
         )
         if not todo:
             return 0
-        model.prepare()
+        # No model.prepare() here: generate() loads the model on the first cache miss, so a run
+        # whose answers are all cached never loads weights (and can run without a GPU).
         for question in tqdm(todo, desc=f"{self.name} {model.model_id} {variant}", unit="q"):
             prompt = self.render_prompt(question, variant)
             try:
                 response = model.generate(
-                    question.images, prompt, schema=self.answer_schema, use_cache=use_cache
+                    question.images, prompt, schema=self.schema_for(variant), use_cache=use_cache
                 )
+            except CacheMiss:
+                raise  # cache-only runs stop at the first miss instead of recording errors
             except Exception as exc:  # noqa: BLE001 - one bad question must not abort the run
                 log.error("%s: model error on %s: %r", self.name, question.id, exc)
                 response = error_response(model, repr(exc))
@@ -429,9 +432,9 @@ class Experiment(ABC):
             question = questions[raw.question_id]
             parsed = parse_answer(
                 raw.response.text,
-                self.answer_schema,
+                self.schema_for(variant),
                 raw.question_id,
-                bare_label_field=self.bare_label_field if self.uses_bare_label(variant) else None,
+                bare_label_field=self.bare_label_field_for(variant),
             )
             derived = self.score_record(question, parsed.answer, variant)
             scored.append(
@@ -479,6 +482,20 @@ class Experiment(ABC):
         }
         write_json(run.summary, summary)
         return summary
+
+    def questions_for(self, variant: str, questions: list[Question]) -> list[Question]:
+        """The questions a variant asks. Default: all of them; experiments whose variants ask
+        different kinds of question (yes/no versus two options) select their own subset."""
+        return questions
+
+    def schema_for(self, variant: str) -> type[BaseModel]:
+        """The answer schema of a variant. Default: ``answer_schema`` for every variant;
+        experiments whose variants ask different kinds of question override this."""
+        return self.answer_schema
+
+    def bare_label_field_for(self, variant: str) -> str | None:
+        """The answer field a bare one-word reply maps onto, or None to require JSON."""
+        return self.bare_label_field if self.uses_bare_label(variant) else None
 
     def uses_bare_label(self, variant: str) -> bool:
         """Whether a bare one word answer is acceptable for this variant. Default: never."""

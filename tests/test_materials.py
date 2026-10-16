@@ -83,6 +83,7 @@ def test_ranges_are_ordered_and_restitution_bounded(settings: Settings) -> None:
         ("ping-pong ball", "ping_pong_plastic"),
         ("glazed porcelain", "ceramic"),
         ("a paperback book", "book_paper_cover"),
+        ("book paper", "book_paper_cover"),
         ("corrugated cardboard box", "cardboard"),
         ("wooden", "wood"),
         ("unobtainium", None),

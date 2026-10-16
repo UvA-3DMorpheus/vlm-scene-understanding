@@ -9,11 +9,17 @@ from vsu.experiments.base import (
     ScoredRecord,
     load_experiment_config,
 )
-from vsu.experiments.exp1_material import MaterialExperiment
+from vsu.experiments.material import (
+    MatchingExperiment,
+    MaterialExperiment,
+    VerificationExperiment,
+)
 
 #: experiment name -> class. Register new experiments here.
 EXPERIMENTS: dict[str, type[Experiment]] = {
     MaterialExperiment.name: MaterialExperiment,
+    VerificationExperiment.name: VerificationExperiment,
+    MatchingExperiment.name: MatchingExperiment,
 }
 
 
@@ -31,8 +37,10 @@ __all__ = [
     "Question",
     "RawRecord",
     "RunDir",
+    "MatchingExperiment",
     "MaterialExperiment",
     "ScoredRecord",
+    "VerificationExperiment",
     "get_experiment",
     "load_experiment_config",
 ]

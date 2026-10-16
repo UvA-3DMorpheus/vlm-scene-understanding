@@ -1,9 +1,9 @@
-"""Aggregate finished runs into tables: one row per model and variant, agreement per model.
+"""Generic reporting: finished runs, dataset sections, provenance rows, csv and markdown.
 
 Consumes the ``summary.json`` and ``scored.jsonl`` of the latest finished run of every
-(experiment, model, variant) under ``VSU_RESULTS_ROOT``. Produces plain rows (lists of
-dictionaries) that ``scripts/report.py`` writes as csv and markdown under
-``results/tables/``. Nothing here reads raw model text.
+(experiment, model, variant) under ``VSU_RESULTS_ROOT``. Experiment specific tables are
+built in their own packages (``vsu.experiments.material.tables``) from these pieces.
+Nothing here reads raw model text.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any
 
 from vsu.experiments.base import CONFIG_FILE, RunDir, ScoredRecord
-from vsu.scoring.classification import agreement
 from vsu.settings import Settings, get_settings
 
 Row = dict[str, Any]
@@ -62,125 +61,27 @@ def finished_runs(
     return out
 
 
-# ---------------------------------------------------------------- experiment 1 tables
+ROLE_ORDER = ("primary", "secondary", "sanity", "other")
+ROLE_TITLES = {
+    "primary": "benchmark",
+    "secondary": "comparison",
+    "sanity": "sanity check",
+    "other": "other",
+}
 
 
-def exp1_accuracy_rows(runs: Iterable[FinishedRun], dataset: str) -> list[Row]:
-    """One row per model and variant for one dataset: accuracy per condition, macro F1, failures."""
-    rows = []
+def dataset_sections(runs: Sequence[FinishedRun]) -> list[tuple[str, str]]:
+    """``(dataset, role)`` pairs in report order: the benchmark first, sanity checks last.
+
+    Roles come from the summaries' ``datasets`` blocks, so a report never needs the config.
+    """
+    roles: dict[str, str] = {}
     for fr in runs:
-        s = fr.summary
-        d = s.get("datasets", {}).get(dataset)
-        if d is None:
-            continue
-        row: Row = {
-            "model": fr.model,
-            "variant": fr.variant,
-            "n": d["n"],
-            "accuracy": _r(d["accuracy"]),
-            "exact_label_rate": _r(d.get("exact_label_rate")),
-            "parse_failures": d["n_parse_failures"],
-        }
-        for group, g in sorted(s["groups"].items()):
-            if group.startswith(f"{dataset}/"):
-                condition = group.split("/", 1)[1]
-                row[f"{condition} acc"] = _r(g["accuracy"])
-                row[f"{condition} macro_f1"] = _r(g["macro_f1"])
-        row["mean_latency_s"] = _r(s.get("mean_latency_s"), 2)
-        row["run"] = fr.run.path.name
-        rows.append(row)
-    return rows
-
-
-def exp1_camera_rows(runs: Iterable[FinishedRun], dataset: str) -> list[Row]:
-    """One row per model and variant: accuracy per camera (viewpoint robustness)."""
-    rows = []
-    for fr in runs:
-        d = fr.summary.get("datasets", {}).get(dataset) or {}
-        by_camera = d.get("by_camera") or {}
-        if not by_camera:
-            continue
-        row: Row = {"model": fr.model, "variant": fr.variant}
-        for camera, c in by_camera.items():
-            row[f"{camera} (n={c['n']})"] = _r(c["accuracy"])
-        rows.append(row)
-    return rows
-
-
-def exp1_dataset_roles(runs: Sequence[FinishedRun]) -> tuple[str, list[str]]:
-    """(primary dataset, sanity datasets) as recorded in the summaries."""
-    for fr in runs:
-        s = fr.summary
-        if "primary_dataset" in s:
-            return s["primary_dataset"], list(s.get("sanity_datasets", []))
-    return "sim", ["smoke"]
-
-
-def exp1_per_material_rows(runs: Iterable[FinishedRun], dataset: str) -> list[Row]:
-    """One row per model, variant, condition and material of a dataset."""
-    rows = []
-    for fr in runs:
-        for group, g in sorted(fr.summary["groups"].items()):
-            if not group.startswith(f"{dataset}/"):
-                continue
-            for material, pc in g["per_class"].items():
-                if not pc["support"]:
-                    continue
-                rows.append(
-                    {
-                        "model": fr.model,
-                        "variant": fr.variant,
-                        "condition": group.split("/", 1)[1],
-                        "material": material,
-                        "support": pc["support"],
-                        "recall": _r(pc["recall"]),
-                        "precision": _r(pc["precision"]),
-                        "f1": _r(pc["f1"]),
-                    }
-                )
-    return rows
-
-
-def exp1_confusion_tables(runs: Iterable[FinishedRun], dataset: str) -> dict[str, list[Row]]:
-    """``"<model>/<variant>/<condition>" -> rows`` of the confusion matrix (true label per row)."""
-    tables: dict[str, list[Row]] = {}
-    for fr in runs:
-        for group, g in sorted(fr.summary["groups"].items()):
-            if not group.startswith(f"{dataset}/"):
-                continue
-            cm = g["confusion"]
-            rows = [
-                {"true \\ predicted": t, **{c: cm["matrix"][t][c] for c in cm["columns"]}}
-                for t in cm["labels"]
-            ]
-            tables[f"{fr.model}/{fr.variant}/{group.split('/', 1)[1]}"] = rows
-    return tables
-
-
-def exp1_agreement_rows(runs: Sequence[FinishedRun], dataset: str) -> list[Row]:
-    """One row per model: agreement of its variants on the dataset's questions they all answered."""
-    by_model: dict[str, dict[str, dict[str, str | None]]] = {}
-    for fr in runs:
-        preds = {
-            s.question_id: (s.derived.get("predicted") if s.parse_ok else None)
-            for s in fr.scored
-            if s.dataset == dataset
-        }
-        by_model.setdefault(fr.model, {})[fr.variant] = preds
-    rows = []
-    for model, variants in sorted(by_model.items()):
-        a = agreement(variants)
-        row: Row = {
-            "model": model,
-            "variants": ",".join(a["variants"]),
-            "n_common": a["n_common"],
-            "all_agree": _r(a["all_agree"]),
-            "fleiss_kappa": _r(a["fleiss_kappa"]),
-        }
-        for pair, value in sorted(a["pairwise"].items()):
-            row[f"agree {pair}"] = _r(value)
-        rows.append(row)
-    return rows
+        for dataset, d in (fr.summary.get("datasets") or {}).items():
+            roles.setdefault(dataset, d.get("role", "other"))
+    return sorted(
+        roles.items(), key=lambda kv: (ROLE_ORDER.index(kv[1]) if kv[1] in ROLE_ORDER else 9, kv[0])
+    )
 
 
 def run_provenance_rows(runs: Iterable[FinishedRun]) -> list[Row]:
@@ -209,7 +110,8 @@ def run_provenance_rows(runs: Iterable[FinishedRun]) -> list[Row]:
 # ---------------------------------------------------------------- writers
 
 
-def _r(value: float | None, digits: int = 3) -> float | None:
+def rounded(value: float | None, digits: int = 3) -> float | None:
+    """``value`` rounded for a table, None kept as None."""
     return None if value is None else round(float(value), digits)
 
 

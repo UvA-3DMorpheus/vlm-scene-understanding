@@ -30,9 +30,15 @@ def template_path(experiment: str, variant: str, templates_dir: Path = TEMPLATES
 
 
 def list_variants(experiment: str, templates_dir: Path = TEMPLATES_DIR) -> list[str]:
-    """Variant names that have a template for ``experiment``."""
+    """Variant names that have a template for ``experiment``.
+
+    Variant names start with a letter (``v1``, ``yesno_v1``). That keeps experiments whose
+    names extend another's apart: ``exp1_1_yesno_v1.jinja`` belongs to ``exp1_1``, not to
+    ``exp1`` as variant ``1_yesno_v1``.
+    """
     prefix = f"{experiment}_"
-    return sorted(p.stem[len(prefix) :] for p in Path(templates_dir).glob(f"{prefix}*{SUFFIX}"))
+    names = (p.stem[len(prefix) :] for p in Path(templates_dir).glob(f"{prefix}*{SUFFIX}"))
+    return sorted(n for n in names if n[:1].isalpha())
 
 
 def template_hash(experiment: str, variant: str, templates_dir: Path = TEMPLATES_DIR) -> str:

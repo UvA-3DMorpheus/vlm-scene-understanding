@@ -1,0 +1,27 @@
+# Experiment 1.1: material verification from a single image.
+# yesno: "Is it made of <material>?" for the true material and a few others (balanced accuracy, yes rate).
+# choice: "Is it made of <A> or of <B>?" for the true material against each distractor, in both orders
+# (accuracy, first-option rate, order consistency).
+# Variants: <task>_v1 answer only, <task>_v2 a short reasoning step before the answer.
+variants: [yesno_v1, yesno_v2, choice_v1, choice_v2]
+models: [dummy]
+seed: 0
+options:
+  # The preview renders are left out of 1.1 and 1.2 to save GPU budget; add sim_preview to compare.
+  datasets: [sim_realistic, smoke]
+  dataset_roles: {sim_realistic: primary, sim_preview: secondary, smoke: sanity}
+  sim_cameras: [front, left, right, high, low]
+  sim_conditions: [frame, crop]
+  sim_multiview: false
+  frame_index: 0
+  crop_margin: 0.2
+  only_passing_scenes: false
+  # Input conditions each task asks in (photos always use their single photo view).
+  yesno_conditions: [frame, crop]
+  choice_conditions: [crop]
+  # Wrong materials asked per object: all four for the simulated label set, a seeded sample of
+  # four of the eleven for the smoke photos, so every object gets the same number of questions.
+  distractors: 4
+notes: >
+  Objects and images are the ones Experiment 1.0 uses (vsu.experiments.material_items), so a
+  model's answers can be compared across the two experiments question by question.
