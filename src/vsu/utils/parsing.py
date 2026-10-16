@@ -25,6 +25,7 @@ _MAX_BARE_LABEL_CHARS = 80
 _THINK_BLOCK = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
 _OPEN_THINK = re.compile(r"<think>.*\Z", re.DOTALL | re.IGNORECASE)
 _BOX_MARKERS = re.compile(r"<\|begin_of_box\|>|<\|end_of_box\|>")
+_BOX_CONTENT = re.compile(r"<\|begin_of_box\|>(.*?)<\|end_of_box\|>", re.DOTALL)
 
 
 class JSONNotFound(ValueError):
@@ -35,13 +36,18 @@ def strip_reasoning(text: str) -> str:
     """Remove a reasoning model's scratch work so only the final answer is parsed.
 
     Drops ``<think>…</think>`` blocks (and an unterminated ``<think>`` tail, which means
-    the token budget ran out mid-thought) and unwraps ``<|begin_of_box|>…<|end_of_box|>``
-    answer markers (GLM-4.xV). Plain text passes through unchanged.
+    the token budget ran out mid-thought). GLM-4.xV marks its final answer with
+    ``<|begin_of_box|>…<|end_of_box|>``: when such a box is present, its content is the
+    answer and the sentence around it ("The answer is …") is dropped; the last box wins.
+    Plain text passes through unchanged.
     """
     if not text:
         return text
     cleaned = _THINK_BLOCK.sub("", text)
     cleaned = _OPEN_THINK.sub("", cleaned)
+    boxes = _BOX_CONTENT.findall(cleaned)
+    if boxes:
+        return boxes[-1].strip()
     cleaned = _BOX_MARKERS.sub("", cleaned)
     return cleaned.strip()
 

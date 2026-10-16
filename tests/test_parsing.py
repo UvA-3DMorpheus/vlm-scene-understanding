@@ -215,3 +215,16 @@ def test_parse_answer_handles_reasoning_model_output() -> None:
     truncated = "<think>" + "thinking " * 50
     r = parse_answer(truncated, MaterialAnswer, "q", bare_label_field="material")
     assert not r.ok and r.error == "empty response"
+
+
+def test_box_content_is_the_answer_and_surrounding_prose_is_dropped() -> None:
+    from vsu.schemas import PairChoiceAnswer
+
+    text = "The answer is <|begin_of_box|>B<|end_of_box|>"
+    assert strip_reasoning(text) == "B"
+    r = parse_answer(text, PairChoiceAnswer, "q", bare_label_field="choice")
+    assert r.ok and r.answer is not None and r.answer.choice == "B"
+    two = "<|begin_of_box|>A<|end_of_box|> no wait <|begin_of_box|>B<|end_of_box|>"
+    assert strip_reasoning(two) == "B"
+    json_box = 'Reasoning. <|begin_of_box|>{"choice": "A", "confidence": 0.8}<|end_of_box|>'
+    assert parse_answer(json_box, PairChoiceAnswer, "q").answer.choice == "A"  # type: ignore[union-attr]

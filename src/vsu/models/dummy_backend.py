@@ -61,6 +61,15 @@ def canned_answer(schema_name: str, rng: random.Random) -> dict[str, Any] | None
             "mass_kg": _estimate(rng, 0.05, 5.0, log_scale=True),
             "reasoning": "dummy: numbers drawn at random",
         }
+    if schema_name == "YesNoAnswer":
+        return {"answer": rng.choice(["yes", "no"]), "confidence": round(rng.uniform(0.3, 0.9), 2)}
+    if schema_name == "ChoiceAnswer":
+        return {
+            "material": rng.choice(MATERIAL_CLASSES),
+            "confidence": round(rng.uniform(0.3, 0.9), 2),
+        }
+    if schema_name == "PairChoiceAnswer":
+        return {"choice": rng.choice(["A", "B"]), "confidence": round(rng.uniform(0.3, 0.9), 2)}
     if schema_name == "ComparativeAnswer":
         return {
             "choice": rng.choice(["A", "B", "same"]),

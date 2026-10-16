@@ -44,6 +44,90 @@ class MaterialAnswer(BaseModel):
         return value
 
 
+YesNo = Literal["yes", "no"]
+
+_YES = {"yes", "y", "true", "correct", "yes it is", "it is"}
+_NO = {"no", "n", "false", "incorrect", "no it is not", "it is not", "not"}
+
+
+class YesNoAnswer(BaseModel):
+    """Experiment 1.1, verification: is the object made of the asked material?"""
+
+    model_config = ConfigDict(extra="ignore")
+
+    answer: YesNo
+    confidence: Confidence = Field(default=None, ge=0, le=1)
+    reasoning: str | None = None
+
+    @field_validator("answer", mode="before")
+    @classmethod
+    def _normalize(cls, value: object) -> object:
+        if isinstance(value, bool):
+            return "yes" if value else "no"
+        if isinstance(value, str):
+            v = value.strip().strip(".!").lower()
+            if v in _YES or v.startswith("yes"):
+                return "yes"
+            if v in _NO or v.startswith("no"):
+                return "no"
+        return value
+
+
+class ChoiceAnswer(BaseModel):
+    """Experiment 1.1, two options: which of the two named materials the object is made of.
+
+    ``material`` is normalized like a label; scoring maps it onto one of the two options.
+    """
+
+    model_config = ConfigDict(extra="ignore")
+
+    material: str
+    confidence: Confidence = Field(default=None, ge=0, le=1)
+    reasoning: str | None = None
+
+    @field_validator("material")
+    @classmethod
+    def _normalize(cls, value: str) -> str:
+        value = normalize_label(value)
+        if not value:
+            raise ValueError("material label is empty")
+        return value
+
+
+_A = {"a", "object a", "image a", "first", "first image", "first object", "left", "the first one"}
+_B = {
+    "b",
+    "object b",
+    "image b",
+    "second",
+    "second image",
+    "second object",
+    "right",
+    "the second one",
+}
+
+
+class PairChoiceAnswer(BaseModel):
+    """Experiment 1.2, matching: which of two shown objects (A or B) has the asked material."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    choice: Literal["A", "B"]
+    confidence: Confidence = Field(default=None, ge=0, le=1)
+    reasoning: str | None = None
+
+    @field_validator("choice", mode="before")
+    @classmethod
+    def _normalize(cls, value: object) -> object:
+        if isinstance(value, str):
+            v = value.strip().strip(".:()").lower()
+            if v in _A:
+                return "A"
+            if v in _B:
+                return "B"
+        return value
+
+
 class PropertyRange(BaseModel):
     """A low-high interval for one property."""
 

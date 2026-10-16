@@ -1,13 +1,16 @@
 """Pydantic models: internal scene representation and typed answers."""
 
 from vsu.schemas.answers import (
+    ChoiceAnswer,
     ComparativeAnswer,
     MaterialAnswer,
+    PairChoiceAnswer,
     ParsedAnswer,
     PropertiesAnswer,
     PropertyEstimate,
     PropertyRange,
     SceneInitAnswer,
+    YesNoAnswer,
     normalize_label,
 )
 from vsu.schemas.scene import (
@@ -29,6 +32,9 @@ from vsu.schemas.scene import (
 
 __all__ = [
     "CAMERA_NAMES",
+    "PairChoiceAnswer",
+    "ChoiceAnswer",
+    "YesNoAnswer",
     "MATERIAL_CLASSES",
     "SCENARIO_TO_PHENOMENON",
     "Camera",
