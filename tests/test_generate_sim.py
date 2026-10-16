@@ -107,3 +107,24 @@ def test_script_does_not_import_mujoco_itself() -> None:
     source = SCRIPT.read_text()
     assert "import mujoco" not in source.replace("import mujoco; print", "")
     assert "mujoco" not in sys.modules
+
+
+def test_blender_renderer_adds_look_and_binary(tmp_path: Path) -> None:
+    cmd = generate_sim.scene_command(
+        "high_drop",
+        tmp_path,
+        width=1280,
+        height=960,
+        fps=24,
+        renderer="blender",
+        blender="/x/blender",
+        python="py",
+    )
+    assert cmd[cmd.index("--renderer") + 1] == "blender"
+    assert cmd[cmd.index("--blender-look") + 1] == "realistic"
+    assert cmd[cmd.index("--blender") + 1] == "/x/blender"
+    plain = generate_sim.scene_command(
+        "high_drop", tmp_path, width=640, height=480, fps=24, python="py"
+    )
+    assert "--renderer" not in plain
+    assert generate_sim.RENDERERS["blender"][0] == "realistic"

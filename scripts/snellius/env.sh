@@ -44,6 +44,11 @@ export VLLM_CACHE_ROOT="${VSU_PROJECT_DIR}/models/vllm"
 export VSU_SIM_REPO="${VSU_SIM_REPO:-${VSU_PROJECT_DIR}/envs/3D-Simulations}"
 # Headless rendering for MuJoCo (EGL works on login and GPU nodes).
 export MUJOCO_GL="${MUJOCO_GL:-egl}"
+# Blender 5.0.1 (Linux build) for the realistic look. The pipeline is pointed at a wrapper that
+# forces the Cycles GPU backend (scripts/snellius/blender-gpu.sh); BLENDER_REAL is the binary.
+export BLENDER_REAL="${BLENDER_REAL:-${VSU_PROJECT_DIR}/envs/blender/blender}"
+export BLENDER="${BLENDER:-${VSU_REPO_DIR}/scripts/snellius/blender-gpu.sh}"
+export BLENDER_COMPUTE_DEVICE="${BLENDER_COMPUTE_DEVICE:-OPTIX}"
 
 # --- uv: binary, download cache, managed Python and the project environment -------------
 # Everything uv writes goes to the project space, never to home (200 GB quota, shared quota

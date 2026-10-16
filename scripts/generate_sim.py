@@ -1,10 +1,15 @@
 """Generate the simulated scene set with the simulation team's pipeline.
 
-Runs the scenarios of Emil Halliday's ``3D-Simulations`` repository from a pinned checkout
-into ``VSU_DATA_ROOT/sim/<scene_id>/`` with the MuJoCo preview renderer, headless.
+Runs the scenarios of Emil Halliday's ``3D-Simulations`` repository from a pinned checkout,
+headless. Two renderers: ``mujoco`` (fast preview look, into ``VSU_DATA_ROOT/sim/preview/``) and
+``blender`` (Cycles, realistic look, into ``VSU_DATA_ROOT/sim/realistic/``; needs the
+Blender binary named by ``BLENDER`` and a GPU, see ``scripts/snellius/generate_sim.slurm``).
+Physics, ground truth, depth and segmentation are identical between the two; only the
+pixels differ.
 
-    python scripts/generate_sim.py                       # all scenes, skip existing ones
+    python scripts/generate_sim.py                       # all scenes, preview look, skip existing
     python scripts/generate_sim.py --scenes high_drop sliding_book --force
+    python scripts/generate_sim.py --renderer blender    # realistic look, 1280x960
     python scripts/generate_sim.py --dry-run             # print the commands only
 
 Consumes: the checkout (``--repo`` or ``VSU_SIM_REPO``, default ``~/3D-Simulations``),
@@ -29,6 +34,12 @@ from vsu.settings import get_settings
 
 #: The commit of 3D-Simulations the scenes are generated from. Bump deliberately.
 PINNED_COMMIT = "05c0043a1a9b67e71478868abeab79d7d363c2fd"
+
+#: Renderer -> (collection under VSU_DATA_ROOT/sim, default width, default height).
+RENDERERS: dict[str, tuple[str, int, int]] = {
+    "mujoco": ("preview", 640, 480),
+    "blender": ("realistic", 1280, 960),
+}
 
 #: scene id -> (scenario module, extra arguments). Resolution and fps are added by the script.
 SCENES: dict[str, tuple[str, list[str]]] = {
@@ -68,11 +79,19 @@ def repo_commit(repo: Path) -> tuple[str, bool]:
 
 
 def scene_command(
-    scene_id: str, out_dir: Path, *, width: int, height: int, fps: int, python: str = sys.executable
+    scene_id: str,
+    out_dir: Path,
+    *,
+    width: int,
+    height: int,
+    fps: int,
+    renderer: str = "mujoco",
+    blender: str | None = None,
+    python: str = sys.executable,
 ) -> list[str]:
     """The pipeline invocation for one scene."""
     module, extra = SCENES[scene_id]
-    return [
+    cmd = [
         python,
         "-m",
         module,
@@ -86,6 +105,11 @@ def scene_command(
         str(fps),
         *extra,
     ]
+    if renderer == "blender":
+        cmd += ["--renderer", "blender", "--blender-look", "realistic"]
+        if blender:
+            cmd += ["--blender", blender]
+    return cmd
 
 
 def scenes_to_run(requested: list[str] | None, out_dir: Path, *, force: bool) -> list[str]:
@@ -123,8 +147,13 @@ def write_manifest(out_dir: Path, *, commit: str, dirty: bool, args: argparse.Na
         "pipeline_repo": "github.com/UvA-3DMorpheus/3D-Simulations",
         "pipeline_commit": commit,
         "pipeline_uncommitted_changes": dirty,
+        "blender": os.environ.get("BLENDER_REAL") if args.renderer == "blender" else None,
+        "cycles_device": os.environ.get("BLENDER_COMPUTE_DEVICE")
+        if args.renderer == "blender"
+        else None,
         "mujoco_version": mujoco_version,
-        "renderer": "mujoco",
+        "renderer": args.renderer,
+        "look": "realistic" if args.renderer == "blender" else "preview",
         "options": {"width": args.width, "height": args.height, "fps": args.fps},
         "scenes": scenes,
     }
@@ -137,10 +166,11 @@ def main(argv: list[str] | None = None) -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("--repo", type=Path, default=default_repo(), help="3D-Simulations checkout")
-    parser.add_argument("--out", type=Path, default=None, help="default VSU_DATA_ROOT/sim")
+    parser.add_argument("--out", type=Path, default=None, help="default VSU_DATA_ROOT/sim/<look>")
     parser.add_argument("--scenes", nargs="*", default=None, help=f"subset of {sorted(SCENES)}")
-    parser.add_argument("--width", type=int, default=640)
-    parser.add_argument("--height", type=int, default=480)
+    parser.add_argument("--renderer", choices=sorted(RENDERERS), default="mujoco")
+    parser.add_argument("--width", type=int, default=None, help="default per renderer")
+    parser.add_argument("--height", type=int, default=None, help="default per renderer")
     parser.add_argument("--fps", type=int, default=24)
     parser.add_argument("--force", action="store_true", help="regenerate existing scenes")
     parser.add_argument("--allow-dirty", action="store_true", help="accept a modified checkout")
@@ -159,20 +189,33 @@ def main(argv: list[str] | None = None) -> int:
     if dirty and not args.allow_dirty:
         raise SystemExit("checkout has uncommitted changes; pass --allow-dirty to proceed")
 
-    out_dir = Path(os.path.abspath(args.out or get_settings().sim_dir))
+    folder, default_w, default_h = RENDERERS[args.renderer]
+    args.width = args.width or default_w
+    args.height = args.height or default_h
+    out_dir = Path(os.path.abspath(args.out or get_settings().sim_collection_dir(folder)))
+    blender = os.environ.get("BLENDER") if args.renderer == "blender" else None
+    if (
+        args.renderer == "blender"
+        and not (blender and Path(blender).is_file())
+        and not args.dry_run
+    ):
+        raise SystemExit("set BLENDER to the Blender executable (scripts/snellius/env.sh does)")
     todo = scenes_to_run(args.scenes, out_dir, force=args.force)
     env = {**os.environ, "MUJOCO_GL": os.environ.get("MUJOCO_GL", "egl"), "PYTHONPATH": str(repo)}
     state = " (dirty)" if dirty else ""
     print(f"repo {repo} @ {commit[:8]}{state}; out {out_dir}; scenes {todo or 'none'}")
     if args.dry_run:
         for scene_id in todo:
-            print(
-                " ".join(
-                    scene_command(
-                        scene_id, out_dir, width=args.width, height=args.height, fps=args.fps
-                    )
-                )
+            cmd = scene_command(
+                scene_id,
+                out_dir,
+                width=args.width,
+                height=args.height,
+                fps=args.fps,
+                renderer=args.renderer,
+                blender=blender,
             )
+            print(" ".join(cmd))
         return 0
     if not todo:
         write_manifest(out_dir, commit=commit, dirty=dirty, args=args)
@@ -182,7 +225,15 @@ def main(argv: list[str] | None = None) -> int:
         ensure_assets(repo, sys.executable, env)
     failed: list[str] = []
     for scene_id in todo:
-        cmd = scene_command(scene_id, out_dir, width=args.width, height=args.height, fps=args.fps)
+        cmd = scene_command(
+            scene_id,
+            out_dir,
+            width=args.width,
+            height=args.height,
+            fps=args.fps,
+            renderer=args.renderer,
+            blender=blender,
+        )
         print(f"\n=== {scene_id}: {' '.join(cmd[1:])}", flush=True)
         result = subprocess.run(cmd, cwd=repo, env=env)
         if result.returncode != 0:
